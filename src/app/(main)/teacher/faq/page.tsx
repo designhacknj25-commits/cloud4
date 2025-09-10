@@ -4,11 +4,10 @@ import { useState, useEffect, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { getFaqs, saveFaqs, getUsers, type FAQ } from "@/lib/data";
-import { generateFaqs } from "@/ai/flows/faq-flow";
+import { getFaqs, saveFaqs, type FAQ } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Sparkles, Trash2, Pencil } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil } from "lucide-react";
 import { FaqItem } from "@/components/faq-item";
 import {
   Dialog,
@@ -38,7 +37,6 @@ const faqSchema = z.object({
 
 export default function ManageFaqsPage() {
   const [faqs, setFaqs] = useState<FAQ[]>([]);
-  const [isAiPending, startAiTransition] = useTransition();
   const [isFormPending, startFormTransition] = useTransition();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFaq, setEditingFaq] = useState<FAQ | null>(null);
@@ -52,57 +50,6 @@ export default function ManageFaqsPage() {
   useEffect(() => {
     setFaqs(getFaqs());
   }, []);
-
-  const handleGenerateFaqs = () => {
-    startAiTransition(async () => {
-      try {
-        const teacherEmail = localStorage.getItem("userEmail");
-        if (!teacherEmail) throw new Error("Teacher not logged in.");
-
-        const users = getUsers();
-        const teacher = users.find(u => u.email === teacherEmail);
-        const questions = teacher?.notifications.map(n => n.message) || [];
-
-        if (questions.length < 3) {
-          toast({
-            variant: "destructive",
-            title: "Not Enough Data",
-            description: "Need at least 3 student questions in your inbox to generate FAQs.",
-          });
-          return;
-        }
-
-        const generated = await generateFaqs({ questions });
-        
-        // Add new, non-duplicate FAQs to the existing list
-        const newFaqs = generated.faqs.filter(
-          (genFaq: any) => !faqs.some(exFaq => exFaq.question.toLowerCase() === genFaq.question.toLowerCase())
-        ).map((faq: any) => ({ ...faq, id: `faq${Date.now()}${Math.random()}` }));
-
-        if (newFaqs.length === 0) {
-            toast({ title: "No New FAQs", description: "The AI did not find any new common questions to add." });
-            return;
-        }
-
-        const updatedFaqs = [...faqs, ...newFaqs];
-        setFaqs(updatedFaqs);
-        saveFaqs(updatedFaqs);
-
-        toast({
-          title: "AI Analysis Complete",
-          description: `${newFaqs.length} new FAQs have been generated and added to your list.`,
-        });
-
-      } catch (error) {
-        console.error("Error generating FAQs:", error);
-        toast({
-          variant: "destructive",
-          title: "AI Generation Failed",
-          description: "Could not generate FAQs at this time. Please try again later.",
-        });
-      }
-    });
-  };
 
   const handleOpenDialog = (faq: FAQ | null = null) => {
     setEditingFaq(faq);
@@ -141,20 +88,12 @@ export default function ManageFaqsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold">Manage FAQs</h1>
-          <p className="text-muted-foreground">Create, edit, and use AI to generate FAQs for your students.</p>
+          <p className="text-muted-foreground">Create and edit FAQs for your students.</p>
         </div>
         <div className="flex gap-2">
             <Button onClick={() => handleOpenDialog()} variant="outline">
                 <Plus className="mr-2 h-4 w-4" />
                 Add FAQ
-            </Button>
-            <Button onClick={handleGenerateFaqs} disabled={isAiPending}>
-                {isAiPending ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                    <Sparkles className="mr-2 h-4 w-4" />
-                )}
-                Generate with AI
             </Button>
         </div>
       </div>
@@ -172,9 +111,6 @@ export default function ManageFaqsPage() {
         ) : (
           <div className="text-center py-16 bg-card/30 rounded-lg">
             <p className="text-muted-foreground">You haven't added any FAQs yet.</p>
-            <Button onClick={handleGenerateFaqs} disabled={isAiPending} className="mt-4">
-              Click here to generate some with AI
-            </Button>
           </div>
         )}
       </div>

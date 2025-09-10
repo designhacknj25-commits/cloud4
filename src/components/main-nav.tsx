@@ -56,7 +56,6 @@ const teacherNav = [
   { href: "/teacher/events", label: "Manage Events", icon: Calendar },
   { href: "/teacher/events/create", label: "Create Event", icon: PlusCircle },
   { href: "/teacher/assistant", label: "Inbox", icon: Bell },
-  { href: "/teacher/faq", label: "Manage FAQs", icon: Users },
 ];
 
 export function MainNav({ children }: { children: React.ReactNode }) {
