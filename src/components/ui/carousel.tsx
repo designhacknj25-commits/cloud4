@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -109,6 +110,7 @@ const Carousel = React.forwardRef<
 
       return () => {
         api?.off("select", onSelect);
+        api?.off("reInit", onSelect);
       };
     }, [api, onSelect])
     
