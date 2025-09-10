@@ -108,9 +108,7 @@ export function AuthForm() {
             title: "Login Successful",
             description: `Welcome back, ${result.name}!`,
           });
-          const redirectPath = result.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
-          localStorage.setItem('userRole', result.role);
-          localStorage.setItem('userEmail', result.email); // Save email for session
+          const redirectPath = result.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard'; // Save email for session
           router.push(redirectPath);
           router.refresh(); // Force a refresh to update layout
         } else {
