@@ -30,6 +30,8 @@ const mockLogin = async (data: any) => {
   if (user) {
     // If the role on the form matches the user's role, login is successful.
     if (user.role === data.role) {
+      localStorage.setItem('userRole', user.role);
+      localStorage.setItem('userEmail', user.email);
       return { success: true, role: user.role, name: user.name, email: user.email };
     } else {
       // If role does not match, return a specific error
@@ -108,9 +110,8 @@ export function AuthForm() {
             title: "Login Successful",
             description: `Welcome back, ${result.name}!`,
           });
-          const redirectPath = result.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard'; // Save email for session
+          const redirectPath = result.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard'; 
           router.push(redirectPath);
-          router.refresh(); // Force a refresh to update layout
         } else {
           toast({
             variant: "destructive",
