@@ -48,14 +48,15 @@ const studentNav = [
   { href: "/student/ask", label: "Ask Teacher", icon: Send },
   { href: "/student/faq", label: "FAQ", icon: HelpCircle },
   { href: "/student/notifications", label: "Notifications", icon: Bell },
-  { href: "/student/profile", label: "Profile", icon: Settings },
 ];
 
 const teacherNav = [
   { href: "/teacher/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/teacher/events", label: "Manage Events", icon: Calendar },
   { href: "/teacher/events/create", label: "Create Event", icon: PlusCircle },
-  { href: "/teacher/assistant", label: "Inbox", icon: Bell },
+  { href: "/teacher/inbox", label: "Inbox", icon: Bell },
+  { href: "/teacher/faq", label: "Manage FAQs", icon: HelpCircle },
+  { href: "/teacher/profile", label: "Profile", icon: Settings },
 ];
 
 export function MainNav({ children }: { children: React.ReactNode }) {
@@ -121,7 +122,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                     <Link href={item.href}>
                       <item.icon />
                       <span>{item.label}</span>
-                      {(item.href.includes('assistant') || item.href.includes('notifications')) && unreadCount > 0 && (
+                      {(item.href.includes('inbox') || item.href.includes('notifications')) && unreadCount > 0 && (
                         <span className="ml-auto inline-flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs text-destructive-foreground">
                           {unreadCount}
                         </span>

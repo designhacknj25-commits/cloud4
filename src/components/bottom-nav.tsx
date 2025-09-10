@@ -23,7 +23,7 @@ const studentNav = [
 const teacherNav = [
   { href: "/teacher/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/teacher/events", label: "Events", icon: Calendar },
-  { href: "/teacher/assistant", label: "Inbox", icon: Bell },
+  { href: "/teacher/inbox", label: "Inbox", icon: Bell },
 ];
 
 export function BottomNav() {
