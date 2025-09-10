@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -28,13 +29,12 @@ const mockLogin = async (data: any) => {
   const user = users.find((u: any) => u.email === data.email && u.password === data.password);
   
   if (user) {
-    // If the role on the form matches the user's role, login is successful.
     if (user.role === data.role) {
+      // Set session items here to ensure it's done upon successful validation
       localStorage.setItem('userRole', user.role);
       localStorage.setItem('userEmail', user.email);
-      return { success: true, role: user.role, name: user.name, email: user.email };
+      return { success: true, role: user.role, name: user.name };
     } else {
-      // If role does not match, return a specific error
       return { success: false, message: `An account exists for this email as a '${user.role}'. Please select the correct role.` };
     }
   }
@@ -111,7 +111,8 @@ export function AuthForm() {
             description: `Welcome back, ${result.name}!`,
           });
           const redirectPath = result.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard'; 
-          router.push(redirectPath);
+          // Use window.location.href for a full page reload to ensure localStorage is read correctly.
+          window.location.href = redirectPath;
         } else {
           toast({
             variant: "destructive",
