@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -10,15 +9,13 @@ import {
   Calendar,
   LayoutDashboard,
   LogOut,
-  PlusCircle,
   Settings,
   Send,
   Loader2,
   HelpCircle,
-  Users,
 } from "lucide-react";
 
-import { useUserRole } from "@/hooks/use-user-role";
+import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,7 +36,6 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { BottomNav } from "./bottom-nav";
-import { useSidebar } from "./ui/sidebar";
 import { getUsers, type User } from "@/lib/data";
 
 
@@ -59,28 +55,27 @@ const teacherNav = [
 ];
 
 export function MainNav({ children }: { children: React.ReactNode }) {
-  const role = useUserRole();
+  const { role, isAuthenticated, isLoading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    const storedRole = localStorage.getItem('userRole');
-    const storedEmail = localStorage.getItem('userEmail');
-    if (!storedRole || !storedEmail) {
+    if (!isLoading && !isAuthenticated) {
       router.push('/login');
-    } else {
-      const users = getUsers();
-      const currentUser = users.find(u => u.email === storedEmail);
-      if (currentUser) {
-        setUser(currentUser);
-        setUnreadCount(currentUser.notifications.filter(n => !n.read).length);
-      } else {
-         router.push('/login');
+    } else if (isAuthenticated) {
+      const storedEmail = localStorage.getItem('userEmail');
+      if (storedEmail) {
+        const users = getUsers();
+        const currentUser = users.find(u => u.email === storedEmail);
+        if (currentUser) {
+          setUser(currentUser);
+          setUnreadCount(currentUser.notifications.filter(n => !n.read).length);
+        }
       }
     }
-  }, [router, pathname]);
+  }, [router, pathname, isLoading, isAuthenticated]);
 
   const handleLogout = () => {
     localStorage.removeItem("userRole");
@@ -90,7 +85,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
 
   const navItems = role === "teacher" ? teacherNav : studentNav;
 
-  if (!role || !user) {
+  if (isLoading || !user) {
     return (
         <div className="flex items-center justify-center min-h-screen">
             <Loader2 className="h-16 w-16 animate-spin text-primary" />

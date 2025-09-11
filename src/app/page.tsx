@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect } from 'react';
@@ -6,20 +5,20 @@ import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function Home() {
   const router = useRouter();
+  const { isAuthenticated, role, isLoading } = useAuth();
 
   useEffect(() => {
-    const userRole = localStorage.getItem('userRole');
-    if (userRole) {
-      const redirectPath = userRole === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
+    if (!isLoading && isAuthenticated) {
+      const redirectPath = role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
       router.replace(redirectPath);
     }
-  }, [router]);
+  }, [isAuthenticated, role, isLoading, router]);
   
-  // Show a loading or splash screen while checking auth
-  if (typeof window !== 'undefined' && localStorage.getItem('userRole')) {
+  if (isLoading || isAuthenticated) {
     return (
         <div className="flex items-center justify-center min-h-screen">
             <Loader2 className="h-16 w-16 animate-spin text-primary" />

@@ -1,11 +1,10 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
 import { getUsers, getEvents, type User, type Event, type Notification } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { CalendarCheck, Users, MessageSquare } from 'lucide-react';
+import { CalendarCheck, Users, Cpu, MessageSquare } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -44,6 +43,7 @@ export default function TeacherDashboard() {
     setRecentNotifications(recentNotifs);
     setIsLoading(false);
   }, []);
+
 
   if (isLoading) {
     return <div>Loading...</div>

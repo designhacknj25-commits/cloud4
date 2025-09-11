@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -11,8 +10,8 @@ import {
   Send,
   Bell,
 } from "lucide-react";
-import { useUserRole } from "@/hooks/use-user-role";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 
 const studentNav = [
   { href: "/student/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -30,12 +29,12 @@ const teacherNav = [
 ];
 
 export function BottomNav() {
-  const role = useUserRole();
+  const { role, isAuthenticated } = useAuth();
   const pathname = usePathname();
 
   const navItems = role === "teacher" ? teacherNav : studentNav;
 
-  if (!role) return null;
+  if (!isAuthenticated) return null;
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card/80 backdrop-blur-lg border-t z-50">
