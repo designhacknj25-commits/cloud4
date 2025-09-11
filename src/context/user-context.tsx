@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { getUserByEmail, type User } from '@/lib/data';
 import { useAuth } from '@/hooks/use-auth';
 
@@ -18,7 +18,7 @@ export const UserContext = createContext<UserContextType>({
 });
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
-    const { email, isAuthenticated } = useAuth();
+    const { email, isAuthenticated, isLoading: isAuthLoading } = useAuth();
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -41,11 +41,20 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     }, [email, isAuthenticated]);
 
     useEffect(() => {
-        fetchUser();
-    }, [fetchUser]);
+        // Only fetch user if auth is resolved and the user is authenticated
+        if (!isAuthLoading) {
+          fetchUser();
+        }
+    }, [isAuthLoading, fetchUser]);
+
+    const value = useMemo(() => ({ 
+      user, 
+      isLoading, 
+      refetchUser: fetchUser 
+    }), [user, isLoading, fetchUser]);
 
     return (
-        <UserContext.Provider value={{ user, isLoading, refetchUser: fetchUser }}>
+        <UserContext.Provider value={value}>
             {children}
         </UserContext.Provider>
     );

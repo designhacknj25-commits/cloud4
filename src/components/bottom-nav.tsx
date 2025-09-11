@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -9,6 +10,7 @@ import {
   HelpCircle,
   Send,
   Bell,
+  Cpu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -26,6 +28,7 @@ const teacherNav = [
   { href: "/teacher/events", label: "Events", icon: Calendar },
   { href: "/teacher/inbox", label: "Inbox", icon: Bell },
   { href: "/teacher/faq", label: "FAQ", icon: HelpCircle },
+  { href: "/teacher/assistant", label: "AI Assistant", icon: Cpu },
 ];
 
 export function BottomNav() {

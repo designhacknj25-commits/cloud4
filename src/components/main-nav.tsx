@@ -45,7 +45,6 @@ const studentNav = [
   { href: "/student/registrations", label: "My Registrations", icon: BookOpen },
   { href: "/student/ask", label: "Ask Teacher", icon: Send },
   { href: "/student/faq", label: "FAQ", icon: HelpCircle },
-  { href: "/student/notifications", label: "Notifications", icon: Bell },
 ];
 
 const teacherNav = [
@@ -53,6 +52,7 @@ const teacherNav = [
   { href: "/teacher/events", label: "Manage Events", icon: Calendar },
   { href: "/teacher/inbox", label: "Inbox", icon: Bell },
   { href: "/teacher/faq", label: "Manage FAQs", icon: HelpCircle },
+  { href: "/teacher/assistant", label: "AI Assistant", icon: Cpu },
 ];
 
 export function MainNav({ children }: { children: React.ReactNode }) {
@@ -70,18 +70,26 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const handleLogout = () => {
     localStorage.removeItem("userRole");
     localStorage.removeItem("userEmail");
-    router.push("/login");
+    // This is a hard reload, which is a simple way to clear all state.
+    window.location.href = "/login";
   };
 
   const navItems = role === "teacher" ? teacherNav : studentNav;
   const isLoading = isAuthLoading || isUserLoading;
 
-  if (isLoading) {
-    return (
+  // Don't show a full-page loader. Instead, the UI will gracefully handle the loading state.
+  // The useEffect above will handle redirection if not authenticated.
+  if (isAuthLoading) {
+      return (
         <div className="flex items-center justify-center min-h-screen">
             <Loader2 className="h-16 w-16 animate-spin text-primary" />
         </div>
     );
+  }
+
+  // Add notifications/inbox to nav based on role
+  if (role === 'student') {
+    navItems.push({ href: "/student/notifications", label: "Notifications", icon: Bell });
   }
 
   const unreadCount = user ? user.notifications.filter(n => !n.read).length : 0;
@@ -128,7 +136,9 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           <div className="flex-1">
              {/* Can add breadcrumbs or page title here */}
           </div>
-           {user && (
+           {isUserLoading ? (
+             <Loader2 className="h-6 w-6 animate-spin" />
+           ) : user && (
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
