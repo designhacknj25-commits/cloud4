@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getEvents, saveEvents, type Event } from '@/lib/data';
+import { getEvents, saveEvents, getUsers, type Event, type User } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,12 +28,7 @@ export default function ManageEventsPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [events, setEvents] = useState<Event[]>([]);
-
-    useEffect(() => {
-        const userEmail = localStorage.getItem('userEmail');
-        const allEvents = getEvents();
-        setEvents(allEvents.filter(e => e.teacherEmail === userEmail));
-    }, []);
+    const [users, setUsers] = useState<User[]>([]);
 
     const deleteEvent = (eventId: string) => {
         const allEvents = getEvents();
@@ -45,6 +41,19 @@ export default function ManageEventsPage() {
     const editEvent = (eventId: string) => {
         router.push(`/teacher/events/${eventId}/edit`);
     };
+
+    useEffect(() => {
+        const userEmail = localStorage.getItem('userEmail');
+        const allEvents = getEvents();
+        const allUsers = getUsers();
+        setUsers(allUsers);
+        setEvents(allEvents.filter(e => e.teacherEmail === userEmail));
+    }, []);
+
+    const getParticipantName = (email: string) => {
+        const user = users.find(u => u.email === email);
+        return user ? user.name : email;
+    }
 
     return (
         <div className="container mx-auto">
@@ -119,7 +128,7 @@ export default function ManageEventsPage() {
                                             <ScrollArea className="h-40 rounded-md border p-2">
                                                 <div className="space-y-2">
                                                     {event.participants.map((p, i) => (
-                                                        <div key={i} className="text-sm">{p}</div>
+                                                        <div key={i} className="text-sm">{getParticipantName(p)}</div>
                                                     ))}
                                                 </div>
                                             </ScrollArea>
