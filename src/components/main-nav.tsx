@@ -16,7 +16,6 @@ import {
   Loader2,
   HelpCircle,
   Users,
-  Cpu,
 } from "lucide-react";
 
 import { useUserRole } from "@/hooks/use-user-role";
@@ -57,7 +56,6 @@ const teacherNav = [
   { href: "/teacher/events", label: "Manage Events", icon: Calendar },
   { href: "/teacher/inbox", label: "Inbox", icon: Bell },
   { href: "/teacher/faq", label: "Manage FAQs", icon: HelpCircle },
-  { href: "/teacher/assistant", label: "AI Assistant", icon: Cpu },
 ];
 
 export function MainNav({ children }: { children: React.ReactNode }) {
