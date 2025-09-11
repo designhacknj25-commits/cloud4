@@ -113,13 +113,19 @@ const defaultEvents: Event[] = [
 
 const initializeData = () => {
     if (!isBrowser) return;
-    if (!localStorage.getItem('mycampus_users')) {
+
+    const usersExist = localStorage.getItem('mycampus_users') !== null;
+    if (!usersExist) {
         localStorage.setItem('mycampus_users', JSON.stringify(defaultUsers));
     }
-    if (!localStorage.getItem('mycampus_events')) {
+
+    const eventsExist = localStorage.getItem('mycampus_events') !== null;
+    if (!eventsExist) {
         localStorage.setItem('mycampus_events', JSON.stringify(defaultEvents));
     }
-     if (!localStorage.getItem('mycampus_faqs')) {
+
+    const faqsExist = localStorage.getItem('mycampus_faqs') !== null;
+    if (!faqsExist) {
         localStorage.setItem('mycampus_faqs', JSON.stringify(defaultFaqs));
     }
 };
