@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -38,8 +38,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { BottomNav } from "./bottom-nav";
-import { getUserByEmail, type User } from "@/lib/data";
-
+import { UserContext } from "@/context/user-context";
 
 const studentNav = [
   { href: "/student/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -57,30 +56,17 @@ const teacherNav = [
 ];
 
 export function MainNav({ children }: { children: React.ReactNode }) {
-  const { role, isAuthenticated, isLoading } = useAuth();
+  const { role, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const { user, isLoading: isUserLoading } = useContext(UserContext);
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (!isAuthLoading && !isAuthenticated) {
       router.push('/login');
-    } else if (isAuthenticated) {
-      const fetchUser = async () => {
-        const storedEmail = localStorage.getItem('userEmail');
-        if (storedEmail) {
-            const currentUser = await getUserByEmail(storedEmail);
-            if (currentUser) {
-              setUser(currentUser);
-              setUnreadCount(currentUser.notifications.filter(n => !n.read).length);
-            }
-        }
-      }
-      fetchUser();
     }
-  }, [router, pathname, isLoading, isAuthenticated]);
-
+  }, [router, isAuthLoading, isAuthenticated]);
+  
   const handleLogout = () => {
     localStorage.removeItem("userRole");
     localStorage.removeItem("userEmail");
@@ -88,14 +74,17 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   };
 
   const navItems = role === "teacher" ? teacherNav : studentNav;
+  const isLoading = isAuthLoading || isUserLoading;
 
-  if (isLoading || !isAuthenticated) {
+  if (isLoading) {
     return (
         <div className="flex items-center justify-center min-h-screen">
             <Loader2 className="h-16 w-16 animate-spin text-primary" />
         </div>
     );
   }
+
+  const unreadCount = user ? user.notifications.filter(n => !n.read).length : 0;
 
   return (
     <div className="flex min-h-screen w-full">

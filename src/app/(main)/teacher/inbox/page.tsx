@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useTransition, useContext } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { formatDistanceToNow } from "date-fns";
 import { Card, CardHeader, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { getUserByEmail, updateNotifications, addNotification, type Notification, type User } from "@/lib/data";
+import { updateNotifications, addNotification, type Notification } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Loader2, Reply } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -29,14 +29,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
+import { UserContext } from "@/context/user-context";
 
 const replySchema = z.object({
   replyMessage: z.string().min(1, "Reply message cannot be empty."),
 });
 
 export default function TeacherInboxPage() {
-  const [teacher, setTeacher] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user: teacher, isLoading, refetchUser } = useContext(UserContext);
   const [isReplyPending, startReplyTransition] = useTransition();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeNotification, setActiveNotification] = useState<Notification | null>(null);
@@ -46,20 +46,6 @@ export default function TeacherInboxPage() {
     resolver: zodResolver(replySchema),
     defaultValues: { replyMessage: "" },
   });
-
-  const loadTeacher = async () => {
-     const teacherEmail = localStorage.getItem("userEmail");
-      if (teacherEmail) {
-        const currentTeacher = await getUserByEmail(teacherEmail);
-        setTeacher(currentTeacher);
-      }
-      setIsLoading(false);
-  }
-
-  useEffect(() => {
-    setIsLoading(true);
-    loadTeacher();
-  }, []);
 
   const handleOpenReplyDialog = (notification: Notification) => {
     setActiveNotification(notification);
@@ -96,12 +82,17 @@ export default function TeacherInboxPage() {
   const markAsRead = async (notificationId: string) => {
     if (!teacher || !teacher.id) return;
     
+    const notification = teacher.notifications.find(n => n.id === notificationId);
+    if (notification && notification.read) {
+        return; // Already read
+    }
+
     const updatedNotifications = teacher.notifications.map(n => 
         n.id === notificationId ? { ...n, read: true } : n
     );
 
     await updateNotifications(teacher.id, updatedNotifications);
-    setTeacher({ ...teacher, notifications: updatedNotifications });
+    refetchUser();
   };
   
   if (isLoading) {

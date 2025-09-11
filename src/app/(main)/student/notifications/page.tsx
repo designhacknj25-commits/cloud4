@@ -1,38 +1,31 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useContext } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { getUserByEmail, updateNotifications, type Notification, type User } from "@/lib/data";
+import { updateNotifications } from "@/lib/data";
 import { Loader2 } from "lucide-react";
+import { UserContext } from "@/context/user-context";
 
 export default function NotificationsPage() {
-    const [user, setUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const { user, isLoading, refetchUser } = useContext(UserContext);
     
-    useEffect(() => {
-        const fetchUser = async () => {
-            setIsLoading(true);
-            const email = localStorage.getItem("userEmail");
-            if (email) {
-                const currentUser = await getUserByEmail(email);
-                setUser(currentUser);
-            }
-            setIsLoading(false);
-        }
-        fetchUser();
-    }, []);
-
     const markAsRead = async (notificationId: string) => {
         if (!user || !user.id) return;
         
+        const notification = user.notifications.find(n => n.id === notificationId);
+        // Don't do anything if it's already read
+        if (notification && notification.read) {
+            return;
+        }
+
         const updatedNotifications = user.notifications.map(n => 
             n.id === notificationId ? { ...n, read: true } : n
         );
         
         await updateNotifications(user.id, updatedNotifications);
-        setUser({ ...user, notifications: updatedNotifications });
+        refetchUser();
     };
 
   if(isLoading) {

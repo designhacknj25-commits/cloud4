@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useContext } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getEvents, addNotification, type Event } from "@/lib/data";
+import { UserContext } from "@/context/user-context";
 
 const askSchema = z.object({
   question: z.string().min(10, "Please ask a more detailed question."),
@@ -20,14 +21,8 @@ const askSchema = z.object({
 export default function AskTeacherPage() {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
-  const [studentEmail, setStudentEmail] = useState<string | null>(null);
-
-  useEffect(() => {
-    const email = localStorage.getItem('userEmail');
-    setStudentEmail(email);
-  }, []);
-
-
+  const { user } = useContext(UserContext);
+  
   const form = useForm<z.infer<typeof askSchema>>({
     resolver: zodResolver(askSchema),
     defaultValues: { question: "" },
@@ -47,14 +42,14 @@ export default function AskTeacherPage() {
   function onSubmit(values: z.infer<typeof askSchema>) {
     startTransition(async () => {
       try {
-        if (!studentEmail) throw new Error("Student not logged in.");
+        if (!user || !user.email) throw new Error("Student not logged in.");
 
-        const teacherEmail = await findMyTeacherEmail(studentEmail);
+        const teacherEmail = await findMyTeacherEmail(user.email);
 
         if (teacherEmail) {
             const newNotification = {
                 id: `notif${Date.now()}`,
-                from: studentEmail,
+                from: user.email,
                 message: values.question,
                 date: new Date().toISOString(),
                 read: false,
@@ -118,7 +113,7 @@ export default function AskTeacherPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isPending || !studentEmail}>
+              <Button type="submit" className="w-full" disabled={isPending || !user}>
                 {isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
