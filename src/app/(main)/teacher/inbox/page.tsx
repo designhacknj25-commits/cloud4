@@ -7,7 +7,7 @@ import * as z from "zod";
 import { formatDistanceToNow } from "date-fns";
 import { Card, CardHeader, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { getUsers, saveUsers, type Notification, type User } from "@/lib/data";
+import { getUserByEmail, updateNotifications, addNotification, type Notification, type User } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Loader2, Reply } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -35,8 +35,8 @@ const replySchema = z.object({
 });
 
 export default function TeacherInboxPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [teacher, setTeacher] = useState<User | undefined>();
+  const [teacher, setTeacher] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isReplyPending, startReplyTransition] = useTransition();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeNotification, setActiveNotification] = useState<Notification | null>(null);
@@ -47,20 +47,18 @@ export default function TeacherInboxPage() {
     defaultValues: { replyMessage: "" },
   });
 
-  const loadNotifications = () => {
+  const loadTeacher = async () => {
      const teacherEmail = localStorage.getItem("userEmail");
       if (teacherEmail) {
-        const users = getUsers();
-        const currentTeacher = users.find((u) => u.email === teacherEmail);
-        if (currentTeacher) {
-          setNotifications(currentTeacher.notifications);
-          setTeacher(currentTeacher);
-        }
+        const currentTeacher = await getUserByEmail(teacherEmail);
+        setTeacher(currentTeacher);
       }
+      setIsLoading(false);
   }
 
   useEffect(() => {
-    loadNotifications();
+    setIsLoading(true);
+    loadTeacher();
   }, []);
 
   const handleOpenReplyDialog = (notification: Notification) => {
@@ -70,25 +68,23 @@ export default function TeacherInboxPage() {
   };
 
   const sendReply = (values: z.infer<typeof replySchema>) => {
-    startReplyTransition(() => {
+    startReplyTransition(async () => {
         if (!teacher || !activeNotification) {
             toast({ variant: "destructive", title: "Error", description: "Could not send reply." });
             return;
         }
 
-        const allUsers = getUsers();
-        const studentIndex = allUsers.findIndex(u => u.email === activeNotification.from);
+        const newNotification: Notification = {
+            id: `notif${Date.now()}`,
+            from: teacher.email, // Reply is from the teacher
+            message: values.replyMessage,
+            date: new Date().toISOString(),
+            read: false,
+        };
 
-        if (studentIndex !== -1) {
-            const newNotification: Notification = {
-                id: `notif${Date.now()}`,
-                from: teacher.email, // Reply is from the teacher
-                message: values.replyMessage,
-                date: new Date().toISOString(),
-                read: false,
-            };
-            allUsers[studentIndex].notifications.unshift(newNotification);
-            saveUsers(allUsers);
+        const success = await addNotification(activeNotification.from, newNotification);
+
+        if (success) {
             toast({ title: "Reply Sent!", description: "The student has been notified." });
             setIsDialogOpen(false);
         } else {
@@ -97,23 +93,20 @@ export default function TeacherInboxPage() {
     });
   }
 
-  const markAsRead = (notificationId: string) => {
-    if (!teacher) return;
+  const markAsRead = async (notificationId: string) => {
+    if (!teacher || !teacher.id) return;
     
-    const allUsers = getUsers();
-    const userIndex = allUsers.findIndex(u => u.email === teacher.email);
+    const updatedNotifications = teacher.notifications.map(n => 
+        n.id === notificationId ? { ...n, read: true } : n
+    );
 
-    if (userIndex !== -1) {
-      const updatedNotifications = allUsers[userIndex].notifications.map(n => 
-          n.id === notificationId ? { ...n, read: true } : n
-      );
-      allUsers[userIndex].notifications = updatedNotifications;
-      saveUsers(allUsers);
-
-      setNotifications(updatedNotifications);
-      setTeacher(allUsers[userIndex]);
-    }
+    await updateNotifications(teacher.id, updatedNotifications);
+    setTeacher({ ...teacher, notifications: updatedNotifications });
   };
+  
+  if (isLoading) {
+      return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
 
   return (
     <div className="container mx-auto">
@@ -123,8 +116,8 @@ export default function TeacherInboxPage() {
       </div>
 
       <div className="space-y-4">
-        {notifications.length > 0 ? (
-          notifications.map((notif) => (
+        {teacher && teacher.notifications.length > 0 ? (
+          teacher.notifications.map((notif) => (
             <Card key={notif.id} className={`bg-card/50 transition-all ${!notif.read ? 'border-primary/50' : ''}`} >
               <div onClick={() => markAsRead(notif.id)} className="cursor-pointer">
                 <CardHeader className="flex flex-row items-start gap-4 space-y-0 p-4">

@@ -2,39 +2,48 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { EventCard } from '@/components/event-card';
-import { getEvents, saveEvents, type Event } from '@/lib/data';
+import { getEvents, updateEvent, type Event } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
 export default function MyRegistrationsPage() {
   const [myEvents, setMyEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  
+  const userEmail = typeof window !== 'undefined' ? localStorage.getItem('userEmail') : null;
 
   useEffect(() => {
-    const userEmail = localStorage.getItem('userEmail');
-    if (userEmail) {
-      const allEvents = getEvents();
-      const registered = allEvents.filter(event => event.participants.includes(userEmail));
-      setMyEvents(registered);
-    }
-  }, []);
+    const fetchMyEvents = async () => {
+      if (userEmail) {
+        setIsLoading(true);
+        const allEvents = await getEvents();
+        const registered = allEvents.filter(event => event.participants.includes(userEmail));
+        setMyEvents(registered);
+        setIsLoading(false);
+      }
+    };
+    fetchMyEvents();
+  }, [userEmail]);
 
-  const handleUnregister = useCallback((eventId: string) => {
-    const userEmail = localStorage.getItem('userEmail');
-    const allEvents = getEvents();
-    const eventToUpdate = allEvents.find(e => e.id === eventId);
+  const handleUnregister = useCallback(async (eventId: string) => {
+    if (!userEmail) return;
 
-    if (eventToUpdate && userEmail) {
-      const updatedEvent = { ...eventToUpdate, participants: eventToUpdate.participants.filter(p => p !== userEmail) };
-      const updatedEvents = allEvents.map(e => e.id === eventId ? updatedEvent : e);
-      
-      saveEvents(updatedEvents);
+    const eventToUpdate = myEvents.find(e => e.id === eventId);
+
+    if (eventToUpdate) {
+      const updatedParticipants = eventToUpdate.participants.filter(p => p !== userEmail);
+      await updateEvent(eventId, { participants: updatedParticipants });
       setMyEvents(prev => prev.filter(e => e.id !== eventId));
-      
       toast({ title: "Successfully Unregistered" });
     } else {
       toast({ variant: "destructive", title: "Failed to Unregister" });
     }
-  }, [toast]);
+  }, [userEmail, myEvents, toast]);
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
 
   return (
     <div>

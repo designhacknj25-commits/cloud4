@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { getEvents, saveEvents, getUsers, type Event, type User } from '@/lib/data';
+import { getEvents, deleteEvent as deleteEventFromDb, getAllUsers, type Event, type User } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -29,21 +29,30 @@ export default function ManageEventsPage() {
     const { toast } = useToast();
     const [events, setEvents] = useState<Event[]>([]);
     const [users, setUsers] = useState<User[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const userEmail = localStorage.getItem('userEmail');
-        const allEvents = getEvents();
-        const allUsers = getUsers();
-        setUsers(allUsers);
-        setEvents(allEvents.filter(e => e.teacherEmail === userEmail));
+        const fetchData = async () => {
+            setIsLoading(true);
+            const userEmail = localStorage.getItem('userEmail');
+            if (userEmail) {
+                const [allEvents, allUsers] = await Promise.all([getEvents(), getAllUsers()]);
+                setUsers(allUsers);
+                setEvents(allEvents.filter(e => e.teacherEmail === userEmail));
+            }
+            setIsLoading(false);
+        }
+        fetchData();
     }, []);
 
-    const deleteEvent = (eventId: string) => {
-        const allEvents = getEvents();
-        const updatedEvents = allEvents.filter(e => e.id !== eventId);
-        saveEvents(updatedEvents);
-        setEvents(prevEvents => prevEvents.filter(e => e.id !== eventId));
-        toast({ title: "Event Deleted" });
+    const deleteEvent = async (eventId: string) => {
+        try {
+            await deleteEventFromDb(eventId);
+            setEvents(prevEvents => prevEvents.filter(e => e.id !== eventId));
+            toast({ title: "Event Deleted" });
+        } catch (error) {
+            toast({ variant: "destructive", title: "Error", description: "Could not delete event." });
+        }
     };
 
     const editEvent = (eventId: string) => {
@@ -54,6 +63,10 @@ export default function ManageEventsPage() {
     const getParticipantName = (email: string) => {
         const user = users.find(u => u.email === email);
         return user ? user.name : email;
+    }
+
+    if (isLoading) {
+        return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
 
     return (

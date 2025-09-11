@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { getEvents, saveEvents, type Event } from '@/lib/data';
+import { getEventById, updateEvent, type Event } from '@/lib/data';
 import { Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -30,55 +30,56 @@ export default function EditEventPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [event, setEvent] = useState<Event | null>(null);
+  const [isPending, startTransition] = useTransition();
   
   const form = useForm<z.infer<typeof eventSchema>>({
     resolver: zodResolver(eventSchema),
   });
 
   useEffect(() => {
-    const eventId = localStorage.getItem('editEventId');
-    if (eventId) {
-      const allEvents = getEvents();
-      const currentEvent = allEvents.find(e => e.id === eventId);
-      if (currentEvent) {
-        setEvent(currentEvent);
-        // Format dates to 'yyyy-MM-ddTHH:mm' for datetime-local input
-        const formattedDate = format(new Date(currentEvent.date), "yyyy-MM-dd'T'HH:mm");
-        const formattedDeadline = format(new Date(currentEvent.deadline), "yyyy-MM-dd'T'HH:mm");
+    const fetchEvent = async () => {
+        const eventId = localStorage.getItem('editEventId');
+        if (eventId) {
+            const currentEvent = await getEventById(eventId);
+            if (currentEvent) {
+                setEvent(currentEvent);
+                // Format dates to 'yyyy-MM-ddTHH:mm' for datetime-local input
+                const formattedDate = format(new Date(currentEvent.date), "yyyy-MM-dd'T'HH:mm");
+                const formattedDeadline = format(new Date(currentEvent.deadline), "yyyy-MM-dd'T'HH:mm");
 
-        form.reset({
-          ...currentEvent,
-          date: formattedDate,
-          deadline: formattedDeadline,
-        });
-      } else {
-        // Event not found, maybe redirect
-        toast({ variant: 'destructive', title: 'Error', description: 'Event not found.' });
-        router.push('/teacher/events');
-      }
-    } else {
-       // No ID found, redirect
-       toast({ variant: 'destructive', title: 'Error', description: 'No event selected to edit.' });
-       router.push('/teacher/events');
-    }
+                form.reset({
+                ...currentEvent,
+                date: formattedDate,
+                deadline: formattedDeadline,
+                });
+            } else {
+                toast({ variant: 'destructive', title: 'Error', description: 'Event not found.' });
+                router.push('/teacher/events');
+            }
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: 'No event selected to edit.' });
+            router.push('/teacher/events');
+        }
+    };
+    fetchEvent();
   }, [form, router, toast]);
 
   const onSubmit = (values: z.infer<typeof eventSchema>) => {
-    if (!event) return;
-
-    const allEvents = getEvents();
-    const updatedEvents = allEvents.map(e => 
-      e.id === event.id ? { ...e, ...values, poster: e.poster, teacherEmail: e.teacherEmail, participants: e.participants } : e
-    );
-    
-    saveEvents(updatedEvents);
-
-    toast({
-      title: 'Event Updated!',
-      description: `The event "${values.title}" has been successfully updated.`,
+    startTransition(async () => {
+        if (!event) return;
+        try {
+            await updateEvent(event.id, values);
+            toast({
+                title: 'Event Updated!',
+                description: `The event "${values.title}" has been successfully updated.`,
+            });
+            localStorage.removeItem('editEventId'); // Clean up
+            router.push('/teacher/events');
+        } catch (error) {
+            console.error("Failed to update event:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to update event.' });
+        }
     });
-    localStorage.removeItem('editEventId'); // Clean up
-    router.push('/teacher/events');
   };
 
   if (!event) {
@@ -172,7 +173,10 @@ export default function EditEventPage() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full">Save Changes</Button>
+            <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Changes
+            </Button>
           </form>
         </Form>
       </CardContent>

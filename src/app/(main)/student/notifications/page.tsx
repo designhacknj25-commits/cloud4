@@ -4,40 +4,40 @@ import { useState, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { getUsers, saveUsers, type Notification, type User } from "@/lib/data";
+import { getUserByEmail, updateNotifications, type Notification, type User } from "@/lib/data";
+import { Loader2 } from "lucide-react";
 
 export default function NotificationsPage() {
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [studentEmail, setStudentEmail] = useState<string | null>(null);
+    const [user, setUser] = useState<User | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     
     useEffect(() => {
-        const email = localStorage.getItem("userEmail");
-        if (email) {
-            setStudentEmail(email);
-            const users = getUsers();
-            const student = users.find((u) => u.email === email);
-            if (student) {
-                setNotifications(student.notifications);
+        const fetchUser = async () => {
+            setIsLoading(true);
+            const email = localStorage.getItem("userEmail");
+            if (email) {
+                const currentUser = await getUserByEmail(email);
+                setUser(currentUser);
             }
+            setIsLoading(false);
         }
+        fetchUser();
     }, []);
 
-    const markAsRead = (notificationId: string) => {
-        if (!studentEmail) return;
+    const markAsRead = async (notificationId: string) => {
+        if (!user || !user.id) return;
         
-        const allUsers = getUsers();
-        const userIndex = allUsers.findIndex(u => u.email === studentEmail);
-
-        if (userIndex !== -1) {
-            const updatedNotifications = allUsers[userIndex].notifications.map(n => 
-                n.id === notificationId ? { ...n, read: true } : n
-            );
-            allUsers[userIndex].notifications = updatedNotifications;
-            saveUsers(allUsers);
-            setNotifications(updatedNotifications);
-        }
+        const updatedNotifications = user.notifications.map(n => 
+            n.id === notificationId ? { ...n, read: true } : n
+        );
+        
+        await updateNotifications(user.id, updatedNotifications);
+        setUser({ ...user, notifications: updatedNotifications });
     };
 
+  if(isLoading) {
+    return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
 
   return (
     <div className="container mx-auto">
@@ -47,8 +47,8 @@ export default function NotificationsPage() {
       </div>
 
       <div className="space-y-4">
-        {notifications.length > 0 ? (
-          notifications.map((notif) => (
+        {user && user.notifications.length > 0 ? (
+          user.notifications.map((notif) => (
             <Card 
                 key={notif.id} 
                 className={`bg-card/50 cursor-pointer transition-all ${!notif.read ? 'border-primary/50' : ''}`}

@@ -38,7 +38,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { BottomNav } from "./bottom-nav";
-import { getUsers, type User } from "@/lib/data";
+import { getUserByEmail, type User } from "@/lib/data";
 
 
 const studentNav = [
@@ -67,15 +67,17 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     if (!isLoading && !isAuthenticated) {
       router.push('/login');
     } else if (isAuthenticated) {
-      const storedEmail = localStorage.getItem('userEmail');
-      if (storedEmail) {
-        const users = getUsers();
-        const currentUser = users.find(u => u.email === storedEmail);
-        if (currentUser) {
-          setUser(currentUser);
-          setUnreadCount(currentUser.notifications.filter(n => !n.read).length);
+      const fetchUser = async () => {
+        const storedEmail = localStorage.getItem('userEmail');
+        if (storedEmail) {
+            const currentUser = await getUserByEmail(storedEmail);
+            if (currentUser) {
+              setUser(currentUser);
+              setUnreadCount(currentUser.notifications.filter(n => !n.read).length);
+            }
         }
       }
+      fetchUser();
     }
   }, [router, pathname, isLoading, isAuthenticated]);
 
@@ -88,7 +90,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const navItems = role === "teacher" ? teacherNav : studentNav;
 
   if (isLoading || !isAuthenticated) {
-    // Show loader while we're determining auth status and redirecting
     return (
         <div className="flex items-center justify-center min-h-screen">
             <Loader2 className="h-16 w-16 animate-spin text-primary" />

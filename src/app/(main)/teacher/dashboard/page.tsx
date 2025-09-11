@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { getUsers, getEvents, type User, type Event, type Notification } from '@/lib/data';
+import { getUserByEmail, getEvents, type User, type Event, type Notification } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { CalendarCheck, Users, Cpu, MessageSquare } from 'lucide-react';
+import { CalendarCheck, Users, MessageSquare, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -19,34 +19,37 @@ export default function TeacherDashboard() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const teacherEmail = localStorage.getItem('userEmail');
-    if (!teacherEmail) {
+    const fetchData = async () => {
+        const teacherEmail = localStorage.getItem('userEmail');
+        if (!teacherEmail) {
+            setIsLoading(false);
+            return;
+        };
+
+        const [allEvents, teacher] = await Promise.all([
+            getEvents(),
+            getUserByEmail(teacherEmail)
+        ]);
+
+        const myEvents = allEvents.filter(e => e.teacherEmail === teacherEmail);
+        const totalParticipants = myEvents.reduce((acc, curr) => acc + curr.participants.length, 0);
+        const unreadMessages = teacher ? teacher.notifications.filter(n => !n.read).length : 0;
+        const recentNotifs = teacher ? teacher.notifications.slice(0, 5) : [];
+
+        setStats({
+          totalEvents: myEvents.length,
+          totalParticipants,
+          unreadMessages,
+        });
+        setRecentNotifications(recentNotifs);
         setIsLoading(false);
-        return;
-    };
-
-    const allEvents = getEvents();
-    const myEvents = allEvents.filter(e => e.teacherEmail === teacherEmail);
-    
-    const totalParticipants = myEvents.reduce((acc, curr) => acc + curr.participants.length, 0);
-
-    const users = getUsers();
-    const teacher = users.find(u => u.email === teacherEmail);
-    const unreadMessages = teacher ? teacher.notifications.filter(n => !n.read).length : 0;
-    const recentNotifs = teacher ? teacher.notifications.slice(0, 5) : [];
-
-    setStats({
-      totalEvents: myEvents.length,
-      totalParticipants,
-      unreadMessages,
-    });
-    setRecentNotifications(recentNotifs);
-    setIsLoading(false);
+    }
+    fetchData();
   }, []);
 
 
   if (isLoading) {
-    return <div>Loading...</div>
+    return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
   return (

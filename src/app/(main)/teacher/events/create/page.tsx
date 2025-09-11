@@ -11,7 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { getEvents, saveEvents } from '@/lib/data';
+import { addEvent } from '@/lib/data';
+import { useTransition } from 'react';
+import { Loader2 } from 'lucide-react';
 
 const eventSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
@@ -25,6 +27,8 @@ const eventSchema = z.object({
 export default function CreateEventPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
+
   const form = useForm<z.infer<typeof eventSchema>>({
     resolver: zodResolver(eventSchema),
     defaultValues: {
@@ -38,22 +42,31 @@ export default function CreateEventPage() {
   });
 
   const onSubmit = (values: z.infer<typeof eventSchema>) => {
-    const allEvents = getEvents();
-    const newEvent = {
-        id: `evt${Date.now()}`,
-        ...values,
-        poster: `https://picsum.photos/seed/evt${Date.now()}/600/400`,
-        teacherEmail: localStorage.getItem('userEmail') || 'teacher@test.com',
-        participants: [],
-    };
-    
-    saveEvents([...allEvents, newEvent]);
+    startTransition(async () => {
+        try {
+            const newEvent = {
+                ...values,
+                poster: `https://picsum.photos/seed/evt${Date.now()}/600/400`,
+                teacherEmail: localStorage.getItem('userEmail') || 'teacher@test.com',
+                participants: [],
+            };
+            
+            await addEvent(newEvent);
 
-    toast({
-      title: 'Event Created!',
-      description: `The event "${values.title}" has been successfully created.`,
+            toast({
+            title: 'Event Created!',
+            description: `The event "${values.title}" has been successfully created.`,
+            });
+            router.push('/teacher/events');
+        } catch (error) {
+            console.error("Failed to create event:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Failed to create the event. Please try again.',
+            });
+        }
     });
-    router.push('/teacher/events');
   };
 
   return (
@@ -143,7 +156,10 @@ export default function CreateEventPage() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full">Create Event</Button>
+            <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Create Event
+            </Button>
           </form>
         </Form>
       </CardContent>

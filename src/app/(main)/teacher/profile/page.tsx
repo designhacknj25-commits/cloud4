@@ -12,9 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { getUsers, saveUsers, type User } from "@/lib/data";
+import { getUserByEmail, updateUser, type User } from "@/lib/data";
 import { Loader2, Upload } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -24,7 +23,6 @@ const profileSchema = z.object({
 
 export default function ProfilePage() {
   const { toast } = useToast();
-  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [isPending, startTransition] = useTransition();
   const [preview, setPreview] = useState<string>("");
@@ -35,19 +33,22 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
-    const userEmail = localStorage.getItem("userEmail");
-    if (userEmail) {
-      const currentUser = getUsers().find((u) => u.email === userEmail);
-      if (currentUser) {
-        setUser(currentUser);
-        form.reset({
-          name: currentUser.name,
-          bio: currentUser.bio,
-          photo: currentUser.photo,
-        });
-        setPreview(currentUser.photo);
+    const fetchUser = async () => {
+      const userEmail = localStorage.getItem("userEmail");
+      if (userEmail) {
+        const currentUser = await getUserByEmail(userEmail);
+        if (currentUser) {
+          setUser(currentUser);
+          form.reset({
+            name: currentUser.name,
+            bio: currentUser.bio || "",
+            photo: currentUser.photo || "",
+          });
+          setPreview(currentUser.photo || "");
+        }
       }
-    }
+    };
+    fetchUser();
   }, [form]);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,29 +65,25 @@ export default function ProfilePage() {
   };
 
   const onSubmit = (values: z.infer<typeof profileSchema>) => {
-    startTransition(() => {
-      if (!user) {
+    startTransition(async () => {
+      if (!user || !user.id) {
         toast({ variant: "destructive", title: "Error", description: "User not found." });
         return;
       }
       
-      const allUsers = getUsers();
-      const userIndex = allUsers.findIndex(u => u.email === user.email);
-
-      if (userIndex !== -1) {
-        const updatedUser = { ...allUsers[userIndex], ...values };
-        allUsers[userIndex] = updatedUser;
-        saveUsers(allUsers);
-        setUser(updatedUser); // Update local state for instant feedback
+      try {
+        await updateUser(user.id, values);
+        setUser(prevUser => prevUser ? { ...prevUser, ...values } : null);
         toast({ title: "Profile Updated", description: "Your information has been saved." });
-      } else {
+      } catch (error) {
+        console.error("Profile update error:", error);
         toast({ variant: "destructive", title: "Error", description: "Could not update profile." });
       }
     });
   };
 
   if (!user) {
-    return <div className="flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
   return (

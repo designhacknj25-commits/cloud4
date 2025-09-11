@@ -1,3 +1,6 @@
+import { db } from './firebase';
+import { collection, getDocs, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, where, writeBatch } from "firebase/firestore";
+
 export type Event = {
   id: string;
   title: string;
@@ -20,9 +23,10 @@ export interface Notification {
 }
 
 export type User = {
+    id?: string; // Firestore ID
     name: string;
     email: string;
-    password: string;
+    password?: string; // Should not be stored in plaintext in a real app
     role: "student" | "teacher";
     photo: string; // Will store as a data URI
     bio: string;
@@ -36,28 +40,119 @@ export type FAQ = {
 };
 
 // =================================================================
-// Universal Data Access Functions using localStorage
+// Universal Data Access Functions using Firestore
 // =================================================================
 
-const isServer = typeof window === 'undefined';
-
 // --- Users ---
-const USERS_KEY = 'cc_users_v3';
-
-export const getUsers = (): User[] => {
-  if (isServer) return [];
-  const users = localStorage.getItem(USERS_KEY);
-  return users ? JSON.parse(users) : [];
+export const getUserByEmail = async (email: string): Promise<User | null> => {
+  const usersRef = collection(db, "users");
+  const q = query(usersRef, where("email", "==", email));
+  const querySnapshot = await getDocs(q);
+  if (querySnapshot.empty) {
+    return null;
+  }
+  const userDoc = querySnapshot.docs[0];
+  return { id: userDoc.id, ...userDoc.data() } as User;
 };
 
-export const saveUsers = (users: User[]) => {
-  if (isServer) return;
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+export const getAllUsers = async (): Promise<User[]> => {
+    const usersCol = collection(db, 'users');
+    const userSnapshot = await getDocs(usersCol);
+    const userList = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+    return userList;
+}
+
+
+export const addUser = async (user: Omit<User, 'id'>): Promise<string> => {
+    const usersRef = collection(db, "users");
+    const docRef = await addDoc(usersRef, user);
+    return docRef.id;
+}
+
+export const updateUser = async (userId: string, userData: Partial<User>): Promise<void> => {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, userData);
+}
+
+export const addNotification = async (email: string, notification: Notification) => {
+    const user = await getUserByEmail(email);
+    if (user && user.id) {
+        const updatedNotifications = [notification, ...user.notifications];
+        await updateUser(user.id, { notifications: updatedNotifications });
+        return true;
+    }
+    return false;
 };
 
-export const initializeUsers = () => {
-    if (localStorage.getItem(USERS_KEY) === null) {
-        const defaultUsers: User[] = [
+export const updateNotifications = async (userId: string, notifications: Notification[]) => {
+    await updateUser(userId, { notifications });
+};
+
+
+// --- Events ---
+export const getEvents = async (): Promise<Event[]> => {
+  const eventsCol = collection(db, 'events');
+  const eventSnapshot = await getDocs(eventsCol);
+  const eventList = eventSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Event));
+  return eventList;
+};
+
+export const getEventById = async (id: string): Promise<Event | null> => {
+    const eventRef = doc(db, "events", id);
+    const eventSnap = await getDoc(eventRef);
+    if(eventSnap.exists()) {
+        return { id: eventSnap.id, ...eventSnap.data() } as Event;
+    }
+    return null;
+}
+
+export const addEvent = async (event: Omit<Event, 'id'>): Promise<string> => {
+    const docRef = await addDoc(collection(db, 'events'), event);
+    return docRef.id;
+}
+
+export const updateEvent = async (eventId: string, eventData: Partial<Event>): Promise<void> => {
+    const eventRef = doc(db, "events", eventId);
+    await updateDoc(eventRef, eventData);
+}
+
+export const deleteEvent = async (eventId: string): Promise<void> => {
+    await deleteDoc(doc(db, "events", eventId));
+}
+
+// --- FAQs ---
+export const getFaqs = async (): Promise<FAQ[]> => {
+  const faqsCol = collection(db, 'faqs');
+  const faqSnapshot = await getDocs(faqsCol);
+  return faqSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FAQ));
+};
+
+export const addFaq = async (faq: Omit<FAQ, 'id'>): Promise<string> => {
+    const docRef = await addDoc(collection(db, "faqs"), faq);
+    return docRef.id;
+};
+
+export const updateFaq = async (faqId: string, faqData: Partial<FAQ>): Promise<void> => {
+    const faqRef = doc(db, "faqs", faqId);
+    await updateDoc(faqRef, faqData);
+};
+
+export const deleteFaq = async (faqId: string): Promise<void> => {
+    await deleteDoc(doc(db, "faqs", faqId));
+};
+
+
+// --- Initialization for first time use ---
+const initializeData = async () => {
+    const metaRef = doc(db, 'meta', 'initialized');
+    const metaSnap = await getDoc(metaRef);
+
+    if (!metaSnap.exists()) {
+        console.log("First time setup: Initializing default data...");
+        const batch = writeBatch(db);
+
+        // Add default users
+        const defaultUsers: Omit<User, 'id'>[] = [
             {
                 name: "Test Student",
                 email: "student@test.com",
@@ -77,65 +172,38 @@ export const initializeUsers = () => {
                 notifications: []
             }
         ];
-        saveUsers(defaultUsers);
+        defaultUsers.forEach(user => {
+            const userRef = doc(collection(db, 'users'));
+            batch.set(userRef, user);
+        });
+
+        // Add default FAQs
+        const defaultFaqs: Omit<FAQ, 'id'>[] = [
+            {
+                question: 'What is the deadline for project submission?',
+                answer: 'The final project deadline is May 15th at 11:59 PM. No late submissions will be accepted.',
+            },
+            {
+                question: 'Where can I find the course materials?',
+                answer: 'All course materials, including lecture slides and recordings, are available on the "Materials" tab of the course portal.',
+            },
+        ];
+        defaultFaqs.forEach(faq => {
+            const faqRef = doc(collection(db, 'faqs'));
+            batch.set(faqRef, faq);
+        });
+
+        // Set the initialized flag
+        batch.set(metaRef, { status: true, initializedAt: new Date().toISOString() });
+
+        await batch.commit();
+        console.log("Default data initialization complete.");
     }
 };
 
-// --- Events ---
-const EVENTS_KEY = 'cc_events_v1';
-
-export const getEvents = (): Event[] => {
-  if (isServer) return [];
-  const events = localStorage.getItem(EVENTS_KEY);
-  return events ? JSON.parse(events) : [];
-}
-
-export const saveEvents = (events: Event[]) => {
-  if (isServer) return;
-  localStorage.setItem(EVENTS_KEY, JSON.stringify(events));
-}
-
-export const initializeEvents = () => {
-    if (localStorage.getItem(EVENTS_KEY) === null) {
-        saveEvents([]);
-    }
-}
-
-// --- FAQs ---
-const FAQS_KEY = 'cc_faqs_v1';
-
-export const getFaqs = (): FAQ[] => {
-  if (isServer) return [];
-  const faqs = localStorage.getItem(FAQS_KEY);
-  
-  if (localStorage.getItem(FAQS_KEY) === null) {
-    const defaultFaqs = [
-      {
-        id: 'faq1',
-        question: 'What is the deadline for project submission?',
-        answer: 'The final project deadline is May 15th at 11:59 PM. No late submissions will be accepted.',
-      },
-      {
-        id: 'faq2',
-        question: 'Where can I find the course materials?',
-        answer: 'All course materials, including lecture slides and recordings, are available on the "Materials" tab of the course portal.',
-      },
-    ];
-    saveFaqs(defaultFaqs);
-    return defaultFaqs;
-  }
-  return faqs ? JSON.parse(faqs) : [];
-};
-
-export const saveFaqs = (faqs: FAQ[]) => {
-  if (isServer) return;
-  localStorage.setItem(FAQS_KEY, JSON.stringify(faqs));
-};
-
-
-// Run initializers
-if (!isServer) {
-    initializeUsers();
-    initializeEvents();
-    getFaqs(); // This will trigger the initialization with default FAQs if none exist
+// Check for initialization
+// This can't be awaited at the top level, so it will run in the background on first app load.
+// A more robust solution might involve a loading screen in the app.
+if (typeof window !== 'undefined') {
+    initializeData().catch(console.error);
 }

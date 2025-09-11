@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { getUsers, saveUsers, type User } from "@/lib/data";
+import { addUser, getUserByEmail, type User } from "@/lib/data";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -22,48 +22,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-
-const mockLogin = async (data: any) => {
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  const users = getUsers();
-  const user = users.find((u: any) => u.email === data.email && u.password === data.password);
-  
-  if (user) {
-    if (user.role === data.role) {
-      // Set session items here to ensure it's done upon successful validation
-      localStorage.setItem('userRole', user.role);
-      localStorage.setItem('userEmail', user.email);
-      return { success: true, role: user.role, name: user.name };
-    } else {
-      return { success: false, message: `An account exists for this email as a '${user.role}'. Please select the correct role.` };
-    }
-  }
-  
-  return { success: false, message: "Invalid credentials." };
-};
-
-const mockSignup = async (data: any) => {
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  let users = getUsers();
-  if (users.some((u: any) => u.email === data.email)) {
-    return { success: false, message: "Email already registered." };
-  }
-  
-  const newUser: User = { 
-    name: data.name, 
-    email: data.email, 
-    password: data.password, 
-    role: data.role,
-    photo: "",
-    bio: "",
-    notifications: [] 
-  };
-  users.push(newUser);
-  saveUsers(users);
-  
-  return { success: true };
-};
-
 
 const formSchema = z.object({
   name: z.string().optional(),
@@ -104,39 +62,63 @@ export function AuthForm() {
     setIsLoading(true);
     try {
       if (isLoginPage) {
-        const result = await mockLogin(values);
-        if (result.success) {
-          toast({
-            title: "Login Successful",
-            description: `Welcome back, ${result.name}!`,
-          });
-          const redirectPath = result.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
-          router.push(redirectPath);
+        const user = await getUserByEmail(values.email);
+        
+        if (user && user.password === values.password) {
+            if (user.role === values.role) {
+                localStorage.setItem('userRole', user.role);
+                localStorage.setItem('userEmail', user.email);
+                toast({
+                    title: "Login Successful",
+                    description: `Welcome back, ${user.name}!`,
+                });
+                const redirectPath = user.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
+                router.push(redirectPath);
+            } else {
+                 toast({
+                    variant: "destructive",
+                    title: "Login Failed",
+                    description: `An account exists for this email as a '${user.role}'. Please select the correct role.`,
+                });
+            }
         } else {
-          toast({
-            variant: "destructive",
-            title: "Login Failed",
-            description: result.message || "Invalid email or password.",
-          });
+             toast({
+                variant: "destructive",
+                title: "Login Failed",
+                description: "Invalid credentials.",
+            });
         }
-      } else {
-        const result = await mockSignup(values);
-        if (result.success) {
-          toast({
+      } else { // Signup
+        const existingUser = await getUserByEmail(values.email);
+        if (existingUser) {
+           toast({
+                variant: "destructive",
+                title: "Signup Failed",
+                description: "Email already registered.",
+            });
+            return;
+        }
+
+        const newUser: Omit<User, 'id'> = { 
+            name: values.name!, 
+            email: values.email, 
+            password: values.password, 
+            role: values.role,
+            photo: "",
+            bio: "",
+            notifications: [] 
+        };
+
+        await addUser(newUser);
+        
+        toast({
             title: "Signup Successful",
             description: "Please log in with your new account.",
-          });
-          // Redirect to login page with the role pre-selected
-          router.push(`/login?role=${values.role}`);
-        } else {
-           toast({
-            variant: "destructive",
-            title: "Signup Failed",
-            description: result.message || "Could not create account.",
-          });
-        }
+        });
+        router.push(`/login?role=${values.role}`);
       }
     } catch (error) {
+       console.error("Authentication error:", error);
        toast({
         variant: "destructive",
         title: "An error occurred",

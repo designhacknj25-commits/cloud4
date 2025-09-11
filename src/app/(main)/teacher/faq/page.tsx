@@ -4,7 +4,7 @@ import { useState, useEffect, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { getFaqs, saveFaqs, type FAQ } from "@/lib/data";
+import { getFaqs, addFaq, updateFaq, deleteFaq, type FAQ } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus } from "lucide-react";
@@ -37,6 +37,7 @@ const faqSchema = z.object({
 
 export default function ManageFaqsPage() {
   const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isFormPending, startFormTransition] = useTransition();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFaq, setEditingFaq] = useState<FAQ | null>(null);
@@ -48,7 +49,13 @@ export default function ManageFaqsPage() {
   });
 
   useEffect(() => {
-    setFaqs(getFaqs());
+    const fetchFaqs = async () => {
+        setIsLoading(true);
+        const data = await getFaqs();
+        setFaqs(data);
+        setIsLoading(false);
+    }
+    fetchFaqs();
   }, []);
 
   const handleOpenDialog = (faq: FAQ | null = null) => {
@@ -58,34 +65,32 @@ export default function ManageFaqsPage() {
   };
 
   const handleDelete = (faqId: string) => {
-    startFormTransition(() => {
-      const currentFaqs = getFaqs();
-      const updatedFaqs = currentFaqs.filter(f => f.id !== faqId);
-      saveFaqs(updatedFaqs);
-      setFaqs(updatedFaqs);
+    startFormTransition(async () => {
+      await deleteFaq(faqId);
+      setFaqs(prev => prev.filter(f => f.id !== faqId));
       toast({ title: "FAQ Deleted" });
     });
   };
 
   const onSubmit = (values: z.infer<typeof faqSchema>) => {
-    startFormTransition(() => {
-        const currentFaqs = getFaqs();
-        let updatedFaqs;
+    startFormTransition(async () => {
         if (editingFaq) {
-            // Editing existing FAQ
-            updatedFaqs = currentFaqs.map(f => f.id === editingFaq.id ? { ...f, ...values } : f);
-             toast({ title: "FAQ Updated" });
+            await updateFaq(editingFaq.id, { question: values.question, answer: values.answer });
+            setFaqs(prev => prev.map(f => f.id === editingFaq.id ? { ...f, ...values } : f));
+            toast({ title: "FAQ Updated" });
         } else {
-            // Adding new FAQ
-            const newFaq = { ...values, id: `faq${Date.now()}` };
-            updatedFaqs = [...currentFaqs, newFaq];
+            const { question, answer } = values;
+            const newFaqId = await addFaq({ question, answer });
+            setFaqs(prev => [...prev, { id: newFaqId, question, answer }]);
             toast({ title: "FAQ Added" });
         }
-        setFaqs(updatedFaqs);
-        saveFaqs(updatedFaqs);
         setIsDialogOpen(false);
     });
   };
+
+  if(isLoading) {
+      return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
 
   return (
     <div className="container mx-auto">
