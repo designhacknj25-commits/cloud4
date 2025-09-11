@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,11 +11,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getUsers, saveUsers, getEvents } from "@/lib/data";
+import { getUsers, saveUsers, getEvents, type User } from "@/lib/data";
 
 // Helper function to add a notification to a teacher
 const addNotificationForTeacher = (teacherEmail: string, studentEmail: string, question: string) => {
-  const users = getUsers();
+  let users: User[] = getUsers();
   const teacherIndex = users.findIndex((u) => u.email === teacherEmail);
 
   if (teacherIndex !== -1) {
@@ -25,6 +26,12 @@ const addNotificationForTeacher = (teacherEmail: string, studentEmail: string, q
       date: new Date().toISOString(),
       read: false,
     };
+    
+    // Ensure notifications array exists
+    if (!users[teacherIndex].notifications) {
+      users[teacherIndex].notifications = [];
+    }
+
     users[teacherIndex].notifications.unshift(newNotification);
     saveUsers(users);
     return true;
@@ -53,6 +60,13 @@ const askSchema = z.object({
 export default function AskTeacherPage() {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [studentEmail, setStudentEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const email = localStorage.getItem('userEmail');
+    setStudentEmail(email);
+  }, []);
+
 
   const form = useForm<z.infer<typeof askSchema>>({
     resolver: zodResolver(askSchema),
@@ -62,7 +76,6 @@ export default function AskTeacherPage() {
   function onSubmit(values: z.infer<typeof askSchema>) {
     startTransition(() => {
       try {
-        const studentEmail = localStorage.getItem('userEmail');
         if (!studentEmail) throw new Error("Student not logged in.");
 
         const teacherEmail = findMyTeacherEmail(studentEmail);
@@ -126,7 +139,7 @@ export default function AskTeacherPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isPending}>
+              <Button type="submit" className="w-full" disabled={isPending || !studentEmail}>
                 {isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
