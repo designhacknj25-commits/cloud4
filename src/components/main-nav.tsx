@@ -74,11 +74,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     window.location.href = "/login";
   };
 
-  const navItems = role === "teacher" ? teacherNav : studentNav;
-  const isLoading = isAuthLoading || isUserLoading;
-
-  // Don't show a full-page loader. Instead, the UI will gracefully handle the loading state.
-  // The useEffect above will handle redirection if not authenticated.
   if (isAuthLoading) {
       return (
         <div className="flex items-center justify-center min-h-screen">
@@ -87,8 +82,10 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const navItems = role === "teacher" ? teacherNav : studentNav;
+
   // Add notifications/inbox to nav based on role
-  if (role === 'student') {
+  if (role === 'student' && !navItems.some(item => item.href.includes('notifications'))) {
     navItems.push({ href: "/student/notifications", label: "Notifications", icon: Bell });
   }
 
