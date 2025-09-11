@@ -11,47 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getUsers, saveUsers, getEvents, type User } from "@/lib/data";
-
-// Helper function to add a notification to a teacher
-const addNotificationForTeacher = (teacherEmail: string, studentEmail: string, question: string) => {
-  let users: User[] = getUsers();
-  const teacherIndex = users.findIndex((u) => u.email === teacherEmail);
-
-  if (teacherIndex !== -1) {
-    const newNotification = {
-      id: `notif${Date.now()}`,
-      from: studentEmail,
-      message: question,
-      date: new Date().toISOString(),
-      read: false,
-    };
-    
-    // Ensure notifications array exists
-    if (!users[teacherIndex].notifications) {
-      users[teacherIndex].notifications = [];
-    }
-
-    users[teacherIndex].notifications.unshift(newNotification);
-    saveUsers(users);
-    return true;
-  }
-  return false;
-};
-
-// Helper function to find the teacher of the most recent event the student registered for
-const findMyTeacherEmail = (studentEmail: string) => {
-    const events = getEvents();
-    const myEvents = events.filter(e => e.participants.includes(studentEmail));
-    
-    if (myEvents.length > 0) {
-        // Sort by date to find the most recent event
-        myEvents.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        return myEvents[0].teacherEmail;
-    }
-    // Fallback to the default teacher if no events are found
-    return "teacher@test.com";
-}
+import { getUsers, saveUsers, getEvents, type User, type Event } from "@/lib/data";
 
 const askSchema = z.object({
   question: z.string().min(10, "Please ask a more detailed question."),
@@ -72,6 +32,46 @@ export default function AskTeacherPage() {
     resolver: zodResolver(askSchema),
     defaultValues: { question: "" },
   });
+  
+  // Helper function to find the teacher of the most recent event the student registered for
+  const findMyTeacherEmail = (studentEmail: string) => {
+      const events: Event[] = getEvents();
+      const myEvents = events.filter(e => e.participants.includes(studentEmail));
+      
+      if (myEvents.length > 0) {
+          // Sort by date to find the most recent event
+          myEvents.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          return myEvents[0].teacherEmail;
+      }
+      // Fallback to the default teacher if no events are found
+      return "teacher@test.com";
+  }
+
+  // Helper function to add a notification to a teacher
+  const addNotificationForTeacher = (teacherEmail: string, studentEmail: string, question: string) => {
+    let users: User[] = getUsers();
+    const teacherIndex = users.findIndex((u) => u.email === teacherEmail);
+
+    if (teacherIndex !== -1) {
+      const newNotification = {
+        id: `notif${Date.now()}`,
+        from: studentEmail,
+        message: question,
+        date: new Date().toISOString(),
+        read: false,
+      };
+      
+      // Ensure notifications array exists
+      if (!users[teacherIndex].notifications) {
+        users[teacherIndex].notifications = [];
+      }
+
+      users[teacherIndex].notifications.unshift(newNotification);
+      saveUsers(users);
+      return true;
+    }
+    return false;
+  };
 
   function onSubmit(values: z.infer<typeof askSchema>) {
     startTransition(() => {

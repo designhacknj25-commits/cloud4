@@ -6,41 +6,35 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getUsers, saveUsers, type Notification, type User } from "@/lib/data";
 
-const getMyNotifications = (studentEmail: string): [Notification[], User | undefined] => {
-    const users = getUsers();
-    const student = users.find((u) => u.email === studentEmail);
-    return student ? [student.notifications, student] : [[], undefined];
-};
-
 export default function NotificationsPage() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [student, setStudent] = useState<User | undefined>();
+    const [studentEmail, setStudentEmail] = useState<string | null>(null);
     
     useEffect(() => {
-        const studentEmail = localStorage.getItem("userEmail");
-        if (studentEmail) {
-            const [notifs, currentStudent] = getMyNotifications(studentEmail);
-            setNotifications(notifs);
-            setStudent(currentStudent);
+        const email = localStorage.getItem("userEmail");
+        if (email) {
+            setStudentEmail(email);
+            const users = getUsers();
+            const student = users.find((u) => u.email === email);
+            if (student) {
+                setNotifications(student.notifications);
+            }
         }
     }, []);
 
     const markAsRead = (notificationId: string) => {
-        if (!student) return;
-        
-        const updatedNotifications = student.notifications.map(n => 
-            n.id === notificationId ? { ...n, read: true } : n
-        );
-        
-        const updatedStudent = { ...student, notifications: updatedNotifications };
-        setStudent(updatedStudent);
-        setNotifications(updatedNotifications);
+        if (!studentEmail) return;
         
         const allUsers = getUsers();
-        const userIndex = allUsers.findIndex(u => u.email === student.email);
+        const userIndex = allUsers.findIndex(u => u.email === studentEmail);
+
         if (userIndex !== -1) {
-            allUsers[userIndex] = updatedStudent;
+            const updatedNotifications = allUsers[userIndex].notifications.map(n => 
+                n.id === notificationId ? { ...n, read: true } : n
+            );
+            allUsers[userIndex].notifications = updatedNotifications;
             saveUsers(allUsers);
+            setNotifications(updatedNotifications);
         }
     };
 

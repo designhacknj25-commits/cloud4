@@ -7,7 +7,7 @@ import * as z from "zod";
 import { getFaqs, saveFaqs, type FAQ } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, Pencil } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { FaqItem } from "@/components/faq-item";
 import {
   Dialog,
@@ -58,23 +58,27 @@ export default function ManageFaqsPage() {
   };
 
   const handleDelete = (faqId: string) => {
-    const updatedFaqs = faqs.filter(f => f.id !== faqId);
-    setFaqs(updatedFaqs);
-    saveFaqs(updatedFaqs);
-    toast({ title: "FAQ Deleted" });
+    startFormTransition(() => {
+      const currentFaqs = getFaqs();
+      const updatedFaqs = currentFaqs.filter(f => f.id !== faqId);
+      saveFaqs(updatedFaqs);
+      setFaqs(updatedFaqs);
+      toast({ title: "FAQ Deleted" });
+    });
   };
 
   const onSubmit = (values: z.infer<typeof faqSchema>) => {
     startFormTransition(() => {
+        const currentFaqs = getFaqs();
         let updatedFaqs;
         if (editingFaq) {
             // Editing existing FAQ
-            updatedFaqs = faqs.map(f => f.id === editingFaq.id ? { ...f, ...values } : f);
+            updatedFaqs = currentFaqs.map(f => f.id === editingFaq.id ? { ...f, ...values } : f);
              toast({ title: "FAQ Updated" });
         } else {
             // Adding new FAQ
             const newFaq = { ...values, id: `faq${Date.now()}` };
-            updatedFaqs = [...faqs, newFaq];
+            updatedFaqs = [...currentFaqs, newFaq];
             toast({ title: "FAQ Added" });
         }
         setFaqs(updatedFaqs);

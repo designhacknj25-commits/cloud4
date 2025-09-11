@@ -34,12 +34,6 @@ const replySchema = z.object({
   replyMessage: z.string().min(1, "Reply message cannot be empty."),
 });
 
-const getMyNotifications = (teacherEmail: string): [Notification[], User | undefined] => {
-  const users = getUsers();
-  const teacher = users.find((u) => u.email === teacherEmail);
-  return teacher ? [teacher.notifications, teacher] : [[], undefined];
-};
-
 export default function TeacherInboxPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [teacher, setTeacher] = useState<User | undefined>();
@@ -56,9 +50,12 @@ export default function TeacherInboxPage() {
   const loadNotifications = () => {
      const teacherEmail = localStorage.getItem("userEmail");
       if (teacherEmail) {
-        const [notifs, currentTeacher] = getMyNotifications(teacherEmail);
-        setNotifications(notifs);
-        setTeacher(currentTeacher);
+        const users = getUsers();
+        const currentTeacher = users.find((u) => u.email === teacherEmail);
+        if (currentTeacher) {
+          setNotifications(currentTeacher.notifications);
+          setTeacher(currentTeacher);
+        }
       }
   }
 
@@ -103,19 +100,18 @@ export default function TeacherInboxPage() {
   const markAsRead = (notificationId: string) => {
     if (!teacher) return;
     
-    const updatedNotifications = teacher.notifications.map(n => 
-        n.id === notificationId ? { ...n, read: true } : n
-    );
-    
-    const updatedTeacher = { ...teacher, notifications: updatedNotifications };
-    setTeacher(updatedTeacher);
-    setNotifications(updatedNotifications);
-    
     const allUsers = getUsers();
     const userIndex = allUsers.findIndex(u => u.email === teacher.email);
+
     if (userIndex !== -1) {
-        allUsers[userIndex] = updatedTeacher;
-        saveUsers(allUsers);
+      const updatedNotifications = allUsers[userIndex].notifications.map(n => 
+          n.id === notificationId ? { ...n, read: true } : n
+      );
+      allUsers[userIndex].notifications = updatedNotifications;
+      saveUsers(allUsers);
+
+      setNotifications(updatedNotifications);
+      setTeacher(allUsers[userIndex]);
     }
   };
 
