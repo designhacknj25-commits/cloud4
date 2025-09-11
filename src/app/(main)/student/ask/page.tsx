@@ -79,7 +79,8 @@ export default function AskTeacherPage() {
                  throw new Error("Could not find the teacher to notify.");
             }
         } else {
-            throw new Error("You are not registered for any events, so there is no teacher to ask.");
+            // This case should not be reached with the fallback in findMyTeacherEmail, but it's good practice.
+            throw new Error("Could not determine which teacher to send the question to.");
         }
 
       } catch (error: any) {
@@ -101,7 +102,7 @@ export default function AskTeacherPage() {
             <Send className="h-8 w-8 text-primary" />
             <div>
               <CardTitle className="text-2xl">Ask a Question</CardTitle>
-              <CardDescription>Your question will be sent to your most recent event's teacher.</CardDescription>
+              <CardDescription>Your question will be sent to your most recent event's teacher, or the default instructor.</CardDescription>
             </div>
           </div>
         </CardHeader>
