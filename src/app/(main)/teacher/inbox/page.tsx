@@ -1,13 +1,14 @@
+
 "use client";
 
-import { useState, useTransition, useContext } from "react";
+import { useState, useTransition, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { formatDistanceToNow } from "date-fns";
 import { Card, CardHeader, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { updateNotifications, addNotification, type Notification } from "@/lib/data";
+import { updateNotifications, addNotification, type Notification, getUserByEmail, type User } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Loader2, Reply } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -29,18 +30,36 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { UserContext } from "@/context/user-context";
+import { getCookie } from "@/lib/utils";
+
 
 const replySchema = z.object({
   replyMessage: z.string().min(1, "Reply message cannot be empty."),
 });
 
 export default function TeacherInboxPage() {
-  const { user: teacher, isLoading, refetchUser } = useContext(UserContext);
+  const [teacher, setTeacher] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isReplyPending, startReplyTransition] = useTransition();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeNotification, setActiveNotification] = useState<Notification | null>(null);
   const { toast } = useToast();
+
+  const fetchUser = useCallback(async () => {
+    const userEmail = getCookie("userEmail");
+    if (userEmail) {
+        !isLoading && setIsLoading(true);
+        const currentUser = await getUserByEmail(userEmail);
+        setTeacher(currentUser);
+        setIsLoading(false);
+    } else {
+        setIsLoading(false);
+    }
+  }, [isLoading]);
+
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
 
   const form = useForm<z.infer<typeof replySchema>>({
     resolver: zodResolver(replySchema),
@@ -80,7 +99,7 @@ export default function TeacherInboxPage() {
   }
 
   const markAsRead = async (notificationId: string) => {
-    if (!teacher || !teacher.id) return;
+    if (!teacher || !teacher.id || !teacher.notifications) return;
     
     const notification = teacher.notifications.find(n => n.id === notificationId);
     if (notification && notification.read) {
@@ -92,7 +111,7 @@ export default function TeacherInboxPage() {
     );
 
     await updateNotifications(teacher.id, updatedNotifications);
-    refetchUser();
+    fetchUser();
   };
   
   if (isLoading) {
@@ -107,7 +126,7 @@ export default function TeacherInboxPage() {
       </div>
 
       <div className="space-y-4">
-        {teacher && teacher.notifications.length > 0 ? (
+        {teacher && teacher.notifications && teacher.notifications.length > 0 ? (
           teacher.notifications.map((notif) => (
             <Card key={notif.id} className={`bg-card/50 transition-all ${!notif.read ? 'border-primary/50' : ''}`} >
               <div onClick={() => markAsRead(notif.id)} className="cursor-pointer">

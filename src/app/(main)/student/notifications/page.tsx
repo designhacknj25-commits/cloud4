@@ -1,18 +1,36 @@
+
 "use client";
 
-import { useContext } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { updateNotifications } from "@/lib/data";
+import { updateNotifications, getUserByEmail, type User } from "@/lib/data";
 import { Loader2 } from "lucide-react";
-import { UserContext } from "@/context/user-context";
+import { getCookie } from "@/lib/utils";
 
 export default function NotificationsPage() {
-    const { user, isLoading, refetchUser } = useContext(UserContext);
+    const [user, setUser] = useState<User | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    
+    const fetchUser = useCallback(async () => {
+        const userEmail = getCookie("userEmail");
+        if (userEmail) {
+            setIsLoading(true);
+            const currentUser = await getUserByEmail(userEmail);
+            setUser(currentUser);
+            setIsLoading(false);
+        } else {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchUser();
+    }, [fetchUser]);
     
     const markAsRead = async (notificationId: string) => {
-        if (!user || !user.id) return;
+        if (!user || !user.id || !user.notifications) return;
         
         const notification = user.notifications.find(n => n.id === notificationId);
         // Don't do anything if it's already read
@@ -25,7 +43,7 @@ export default function NotificationsPage() {
         );
         
         await updateNotifications(user.id, updatedNotifications);
-        refetchUser();
+        fetchUser(); // Refetch user to update state
     };
 
   if(isLoading) {
@@ -40,7 +58,7 @@ export default function NotificationsPage() {
       </div>
 
       <div className="space-y-4">
-        {user && user.notifications.length > 0 ? (
+        {user && user.notifications && user.notifications.length > 0 ? (
           user.notifications.map((notif) => (
             <Card 
                 key={notif.id} 

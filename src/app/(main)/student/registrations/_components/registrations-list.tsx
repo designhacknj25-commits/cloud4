@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
@@ -5,16 +6,16 @@ import { EventCard } from '@/components/event-card';
 import { getEvents, updateEvent, type Event } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { getCookie } from '@/lib/utils';
 
 export function RegistrationsList() {
   const [myEvents, setMyEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
-  const userEmail = typeof window !== 'undefined' ? localStorage.getItem('userEmail') : null;
+  const userEmail = getCookie('userEmail');
 
-  useEffect(() => {
-    const fetchMyEvents = async () => {
+  const fetchMyEvents = useCallback(async () => {
       if (userEmail) {
         setIsLoading(true);
         const allEvents = await getEvents();
@@ -22,9 +23,12 @@ export function RegistrationsList() {
         setMyEvents(registered);
         setIsLoading(false);
       }
-    };
+    }, [userEmail]);
+
+
+  useEffect(() => {
     fetchMyEvents();
-  }, [userEmail]);
+  }, [fetchMyEvents]);
 
   const handleUnregister = useCallback(async (eventId: string) => {
     if (!userEmail) return;
@@ -60,7 +64,9 @@ export function RegistrationsList() {
                 ))}
             </div>
         ) : (
-             <p className="text-muted-foreground">A list of events you are registered for will appear here.</p>
+            <div className="text-center py-16 bg-card/30 rounded-lg">
+               <p className="text-muted-foreground">You haven't registered for any events yet.</p>
+            </div>
         )}
     </>
   );

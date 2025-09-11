@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useContext, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -12,12 +12,10 @@ import {
   LogOut,
   Settings,
   Send,
-  Loader2,
   HelpCircle,
   Cpu,
 } from "lucide-react";
 
-import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,12 +36,13 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { BottomNav } from "./bottom-nav";
-import { UserContext } from "@/context/user-context";
+import type { User } from "@/lib/data";
 
 const studentNav = [
   { href: "/student/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/student/registrations", label: "My Registrations", icon: BookOpen },
   { href: "/student/ask", label: "Ask Teacher", icon: Send },
+  { href: "/student/notifications", label: "Notifications", icon: Bell },
   { href: "/student/faq", label: "FAQ", icon: HelpCircle },
 ];
 
@@ -55,40 +54,25 @@ const teacherNav = [
   { href: "/teacher/assistant", label: "AI Assistant", icon: Cpu },
 ];
 
-export function MainNav({ children }: { children: React.ReactNode }) {
-  const { role, isAuthenticated, isLoading: isAuthLoading } = useAuth();
-  const { user, isLoading: isUserLoading } = useContext(UserContext);
+export function MainNav({ 
+  children,
+  user,
+  role
+}: { 
+  children: React.ReactNode,
+  user: User | null,
+  role: string | null
+}) {
   const pathname = usePathname();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isAuthLoading && !isAuthenticated) {
-      router.push('/login');
-    }
-  }, [router, isAuthLoading, isAuthenticated]);
   
   const handleLogout = () => {
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("userEmail");
-    // This is a hard reload, which is a simple way to clear all state.
+    // This is a client-side action
+    document.cookie = "userRole=; path=/; max-age=0";
+    document.cookie = "userEmail=; path=/; max-age=0";
     window.location.href = "/login";
   };
-
-  if (isAuthLoading) {
-      return (
-        <div className="flex items-center justify-center min-h-screen">
-            <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        </div>
-    );
-  }
-
+  
   const navItems = role === "teacher" ? teacherNav : studentNav;
-
-  // Add notifications/inbox to nav based on role
-  if (role === 'student' && !navItems.some(item => item.href.includes('notifications'))) {
-    navItems.push({ href: "/student/notifications", label: "Notifications", icon: Bell });
-  }
-
   const unreadCount = user ? user.notifications.filter(n => !n.read).length : 0;
 
   return (
@@ -133,9 +117,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           <div className="flex-1">
              {/* Can add breadcrumbs or page title here */}
           </div>
-           {isUserLoading ? (
-             <Loader2 className="h-6 w-6 animate-spin" />
-           ) : user && (
+           {user && (
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">

@@ -15,6 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { getUserByEmail, updateUser, type User } from "@/lib/data";
 import { Loader2, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { getCookie } from "@/lib/utils";
+
 
 const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -35,7 +37,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const userEmail = localStorage.getItem("userEmail");
+      const userEmail = getCookie("userEmail");
       if (userEmail) {
         const currentUser = await getUserByEmail(userEmail);
         if (currentUser) {

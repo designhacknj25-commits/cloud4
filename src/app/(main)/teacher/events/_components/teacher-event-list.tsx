@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -22,6 +23,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { getCookie } from '@/lib/utils';
 
 export function TeacherEventList() {
     const router = useRouter();
@@ -33,7 +35,7 @@ export function TeacherEventList() {
     useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true);
-            const userEmail = localStorage.getItem('userEmail');
+            const userEmail = getCookie('userEmail');
             if (userEmail) {
                 const [allEvents, allUsers] = await Promise.all([getEvents(), getAllUsers()]);
                 setUsers(allUsers);

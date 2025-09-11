@@ -36,6 +36,11 @@ const signupSchema = formSchema.refine((data) => !!data.name && data.name.length
   path: ["name"],
 });
 
+async function setAuthCookies(role: string, email: string) {
+    document.cookie = `userRole=${role}; path=/; max-age=604800`; // 7 days
+    document.cookie = `userEmail=${email}; path=/; max-age=604800`; // 7 days
+}
+
 export function AuthForm() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -66,14 +71,14 @@ export function AuthForm() {
         
         if (user && user.password === values.password) {
             if (user.role === values.role) {
-                localStorage.setItem('userRole', user.role);
-                localStorage.setItem('userEmail', user.email);
+                await setAuthCookies(user.role, user.email);
                 toast({
                     title: "Login Successful",
                     description: `Welcome back, ${user.name}!`,
                 });
                 const redirectPath = user.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
                 router.push(redirectPath);
+                router.refresh();
             } else {
                  toast({
                     variant: "destructive",

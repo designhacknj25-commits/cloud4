@@ -1,51 +1,36 @@
-"use client";
-
-import { useState, useEffect, useContext } from 'react';
-import { getEvents, type Event, type Notification } from '@/lib/data';
+import { getEvents, getUserByEmail, type Event, type Notification } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { CalendarCheck, Users, MessageSquare, Loader2 } from 'lucide-react';
+import { CalendarCheck, Users, MessageSquare } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { UserContext } from '@/context/user-context';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
-export default function TeacherDashboard() {
-  const { user, isLoading: isUserLoading } = useContext(UserContext);
-  const [stats, setStats] = useState({
-    totalEvents: 0,
-    totalParticipants: 0,
-  });
-  const [recentNotifications, setRecentNotifications] = useState<Notification[]>([]);
-  const [isStatsLoading, setIsStatsLoading] = useState(true);
+export default async function TeacherDashboard() {
+  const cookieStore = cookies();
+  const userEmail = cookieStore.get('userEmail')?.value;
 
-  useEffect(() => {
-    const fetchData = async () => {
-        if (!user || !user.email) return;
-
-        setIsStatsLoading(true);
-        const allEvents = await getEvents();
-        const myEvents = allEvents.filter(e => e.teacherEmail === user.email);
-        const totalParticipants = myEvents.reduce((acc, curr) => acc + curr.participants.length, 0);
-        
-        setStats({
-          totalEvents: myEvents.length,
-          totalParticipants,
-        });
-
-        const recentNotifs = user.notifications.slice(0, 5);
-        setRecentNotifications(recentNotifs);
-        setIsStatsLoading(false);
-    }
-    fetchData();
-  }, [user]);
-
-  const isLoading = isUserLoading || isStatsLoading;
-
-  if (isLoading) {
-    return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  if (!userEmail) {
+    redirect('/login');
   }
 
+  const user = await getUserByEmail(userEmail);
+  if (!user) {
+    redirect('/login');
+  }
+
+  const allEvents = await getEvents();
+  const myEvents = allEvents.filter(e => e.teacherEmail === user.email);
+  const totalParticipants = myEvents.reduce((acc, curr) => acc + curr.participants.length, 0);
+  
+  const stats = {
+    totalEvents: myEvents.length,
+    totalParticipants,
+  };
+
+  const recentNotifications = user.notifications.slice(0, 5);
   const unreadMessages = user ? user.notifications.filter(n => !n.read).length : 0;
 
   return (

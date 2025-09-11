@@ -13,7 +13,7 @@ import {
   Cpu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/use-auth";
+import { useEffect, useState } from "react";
 
 const studentNav = [
   { href: "/student/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -31,13 +31,24 @@ const teacherNav = [
   { href: "/teacher/assistant", label: "AI Assistant", icon: Cpu },
 ];
 
+const getCookie = (name: string) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift();
+};
+
+
 export function BottomNav() {
-  const { role, isAuthenticated } = useAuth();
   const pathname = usePathname();
+  const [role, setRole] = useState<string | undefined>(undefined);
+  
+  useEffect(() => {
+    setRole(getCookie('userRole'));
+  }, []);
 
   const navItems = role === "teacher" ? teacherNav : studentNav;
 
-  if (!isAuthenticated) return null;
+  if (!role) return null;
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card/80 backdrop-blur-lg border-t z-50">

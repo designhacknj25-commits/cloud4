@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from 'react-hook-form';
@@ -14,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { addEvent } from '@/lib/data';
 import { useTransition } from 'react';
 import { Loader2 } from 'lucide-react';
+import { getCookie } from '@/lib/utils';
 
 const eventSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
@@ -28,6 +30,7 @@ export default function CreateEventPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const userEmail = getCookie('userEmail');
 
   const form = useForm<z.infer<typeof eventSchema>>({
     resolver: zodResolver(eventSchema),
@@ -47,7 +50,7 @@ export default function CreateEventPage() {
             const newEvent = {
                 ...values,
                 poster: `https://picsum.photos/seed/evt${Date.now()}/600/400`,
-                teacherEmail: localStorage.getItem('userEmail') || 'teacher@test.com',
+                teacherEmail: userEmail || 'teacher@test.com',
                 participants: [],
             };
             

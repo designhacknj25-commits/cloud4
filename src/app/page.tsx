@@ -1,35 +1,18 @@
 
-"use client";
-
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Loader2 } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  const router = useRouter();
-  const { isAuthenticated, role, isLoading } = useAuth();
+  const cookieStore = cookies();
+  const userRole = cookieStore.get('userRole')?.value;
 
-  useEffect(() => {
-    // Redirect only when authentication is confirmed and user is authenticated
-    if (!isLoading && isAuthenticated) {
-      const redirectPath = role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
-      router.replace(redirectPath);
-    }
-  }, [isAuthenticated, role, isLoading, router]);
-  
-  // While loading, or if authenticated, show a loader to prevent flicker before redirect.
-  if (isLoading || isAuthenticated) {
-    return (
-        <div className="flex items-center justify-center min-h-screen">
-            <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        </div>
-    );
+  if (userRole) {
+    const redirectPath = userRole === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
+    redirect(redirectPath);
   }
 
-  // Show this content immediately if not loading and not authenticated.
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-transparent">
       <main className="flex flex-col items-center justify-center w-full flex-1 px-4 sm:px-20 text-center">
