@@ -38,6 +38,8 @@ export type FAQ = {
   id: string;
   question: string;
   answer: string;
+  eventId: string;
+  eventTitle: string;
 };
 
 // =================================================================
@@ -70,19 +72,6 @@ const defaultUsers: User[] = [
     }
 ];
 
-const defaultFaqs: FAQ[] = [
-    {
-        id: 'faq1',
-        question: 'What is the deadline for project submission?',
-        answer: 'The final project deadline is May 15th at 11:59 PM. No late submissions will be accepted.',
-    },
-    {
-        id: 'faq2',
-        question: 'Where can I find the course materials?',
-        answer: 'All course materials, including lecture slides and recordings, are available on the "Materials" tab of the course portal.',
-    },
-];
-
 const defaultEvents: Event[] = [
     {
         id: 'event1',
@@ -110,22 +99,35 @@ const defaultEvents: Event[] = [
     }
 ];
 
+const defaultFaqs: FAQ[] = [
+    {
+        id: 'faq1',
+        question: 'What is the pre-requisite for the AI workshop?',
+        answer: 'There are no pre-requisites! This is a beginner-friendly workshop. Just bring your laptop.',
+        eventId: 'event1',
+        eventTitle: 'Intro to AI Workshop'
+    },
+    {
+        id: 'faq2',
+        question: 'Will there be a recording of the AI workshop?',
+        answer: 'Yes, the workshop will be recorded and shared with all registered participants after the event.',
+        eventId: 'event1',
+        eventTitle: 'Intro to AI Workshop'
+    },
+];
 
 const initializeData = () => {
     if (!isBrowser) return;
 
-    const usersExist = localStorage.getItem('mycampus_users') !== null;
-    if (!usersExist) {
+    if (!localStorage.getItem('mycampus_users')) {
         localStorage.setItem('mycampus_users', JSON.stringify(defaultUsers));
     }
 
-    const eventsExist = localStorage.getItem('mycampus_events') !== null;
-    if (!eventsExist) {
+    if (!localStorage.getItem('mycampus_events')) {
         localStorage.setItem('mycampus_events', JSON.stringify(defaultEvents));
     }
 
-    const faqsExist = localStorage.getItem('mycampus_faqs') !== null;
-    if (!faqsExist) {
+    if (!localStorage.getItem('mycampus_faqs')) {
         localStorage.setItem('mycampus_faqs', JSON.stringify(defaultFaqs));
     }
 };
@@ -238,7 +240,7 @@ export const addFaq = (faq: Omit<FAQ, 'id'>): string => {
     return newFaq.id;
 };
 
-export const updateFaq = (faqId: string, faqData: Partial<FAQ>): void => {
+export const updateFaq = (faqId: string, faqData: Partial<Omit<FAQ, 'id'>>): void => {
     if (!isBrowser) return;
     let faqs = getFaqs();
     faqs = faqs.map(f => f.id === faqId ? { ...f, ...faqData } : f);
