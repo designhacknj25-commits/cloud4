@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from 'react-hook-form';
@@ -15,6 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 import { getEvents, saveEvents, type Event } from '@/lib/data';
 import { Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+
+export const dynamic = 'force-dynamic';
 
 const eventSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
@@ -60,7 +63,7 @@ export default function EditEventPage() {
 
     const allEvents = getEvents();
     const updatedEvents = allEvents.map(e => 
-      e.id === event.id ? { ...e, ...values } : e
+      e.id === event.id ? { ...e, ...values, poster: e.poster, teacherEmail: e.teacherEmail, participants: e.participants } : e
     );
     
     saveEvents(updatedEvents);
