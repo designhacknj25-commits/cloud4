@@ -30,6 +30,14 @@ export default function ManageEventsPage() {
     const [events, setEvents] = useState<Event[]>([]);
     const [users, setUsers] = useState<User[]>([]);
 
+    useEffect(() => {
+        const userEmail = localStorage.getItem('userEmail');
+        const allEvents = getEvents();
+        const allUsers = getUsers();
+        setUsers(allUsers);
+        setEvents(allEvents.filter(e => e.teacherEmail === userEmail));
+    }, []);
+
     const deleteEvent = (eventId: string) => {
         const allEvents = getEvents();
         const updatedEvents = allEvents.filter(e => e.id !== eventId);
@@ -39,16 +47,9 @@ export default function ManageEventsPage() {
     };
 
     const editEvent = (eventId: string) => {
-        router.push(`/teacher/events/${eventId}/edit`);
+        localStorage.setItem('editEventId', eventId);
+        router.push(`/teacher/events/edit`);
     };
-
-    useEffect(() => {
-        const userEmail = localStorage.getItem('userEmail');
-        const allEvents = getEvents();
-        const allUsers = getUsers();
-        setUsers(allUsers);
-        setEvents(allEvents.filter(e => e.teacherEmail === userEmail));
-    }, []);
 
     const getParticipantName = (email: string) => {
         const user = users.find(u => u.email === email);
