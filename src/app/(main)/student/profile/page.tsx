@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
@@ -77,9 +78,8 @@ export default function ProfilePage() {
         allUsers[userIndex] = updatedUser;
         saveUsers(allUsers);
         toast({ title: "Profile Updated", description: "Your information has been saved." });
-        // Force a refresh of the page to show new avatar in nav
+        // Refresh the server-side props of the current route.
         router.refresh(); 
-        window.location.reload();
       } else {
         toast({ variant: "destructive", title: "Error", description: "Could not update profile." });
       }
