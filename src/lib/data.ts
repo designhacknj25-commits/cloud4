@@ -13,7 +13,7 @@ export type Event = {
 
 export interface Notification {
   id: string;
-  from: string; // student email
+  from: string; // student or teacher email
   message: string;
   date: string;
   read: boolean;
@@ -56,7 +56,7 @@ export const saveUsers = (users: User[]) => {
 };
 
 export const initializeUsers = () => {
-    if (getUsers().length === 0) {
+    if (localStorage.getItem(USERS_KEY) === null) {
         const defaultUsers: User[] = [
             {
                 name: "Test Student",
@@ -95,9 +95,8 @@ export const saveEvents = (events: Event[]) => {
   localStorage.setItem(EVENTS_KEY, JSON.stringify(events));
 }
 
-// Initialize with no events for a clean slate
 export const initializeEvents = () => {
-    if (getEvents().length === 0) {
+    if (localStorage.getItem(EVENTS_KEY) === null) {
         saveEvents([]);
     }
 }
@@ -108,8 +107,8 @@ const FAQS_KEY = 'cc_faqs_v1';
 export const getFaqs = (): FAQ[] => {
   if (isServer) return [];
   const faqs = localStorage.getItem(FAQS_KEY);
-  // Start with some default FAQs if none are saved
-  if (!faqs) {
+  
+  if (localStorage.getItem(FAQS_KEY) === null) {
     const defaultFaqs = [
       {
         id: 'faq1',
@@ -125,7 +124,7 @@ export const getFaqs = (): FAQ[] => {
     saveFaqs(defaultFaqs);
     return defaultFaqs;
   }
-  return JSON.parse(faqs);
+  return faqs ? JSON.parse(faqs) : [];
 };
 
 export const saveFaqs = (faqs: FAQ[]) => {
@@ -138,4 +137,5 @@ export const saveFaqs = (faqs: FAQ[]) => {
 if (!isServer) {
     initializeUsers();
     initializeEvents();
+    getFaqs(); // This will trigger the initialization with default FAQs if none exist
 }
