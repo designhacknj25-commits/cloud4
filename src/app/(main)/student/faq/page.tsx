@@ -1,6 +1,3 @@
-"use client";
-
-import { useState, useEffect } from "react";
 import { getFaqs, type FAQ } from "@/lib/data";
 import {
   Accordion,
@@ -8,25 +5,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { HelpCircle, Loader2 } from "lucide-react";
+import { HelpCircle } from "lucide-react";
 
-export default function StudentFaqPage() {
-  const [faqs, setFaqs] = useState<FAQ[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchFaqs = async () => {
-        setIsLoading(true);
-        const data = await getFaqs();
-        setFaqs(data);
-        setIsLoading(false);
-    }
-    fetchFaqs();
-  }, []);
-
-  if (isLoading) {
-    return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
-  }
+export default async function StudentFaqPage() {
+  const faqs: FAQ[] = await getFaqs();
 
   return (
     <div className="container mx-auto max-w-4xl">

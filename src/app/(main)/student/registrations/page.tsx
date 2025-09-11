@@ -1,68 +1,15 @@
-"use client";
-
-import { useState, useEffect, useCallback } from 'react';
 import { EventCard } from '@/components/event-card';
-import { getEvents, updateEvent, type Event } from '@/lib/data';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { getEvents } from '@/lib/data';
+import { RegistrationsList } from './_components/registrations-list';
+import { Suspense } from 'react';
 
 export default function MyRegistrationsPage() {
-  const [myEvents, setMyEvents] = useState<Event[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
-  
-  const userEmail = typeof window !== 'undefined' ? localStorage.getItem('userEmail') : null;
-
-  useEffect(() => {
-    const fetchMyEvents = async () => {
-      if (userEmail) {
-        setIsLoading(true);
-        const allEvents = await getEvents();
-        const registered = allEvents.filter(event => event.participants.includes(userEmail));
-        setMyEvents(registered);
-        setIsLoading(false);
-      }
-    };
-    fetchMyEvents();
-  }, [userEmail]);
-
-  const handleUnregister = useCallback(async (eventId: string) => {
-    if (!userEmail) return;
-
-    const eventToUpdate = myEvents.find(e => e.id === eventId);
-
-    if (eventToUpdate) {
-      const updatedParticipants = eventToUpdate.participants.filter(p => p !== userEmail);
-      await updateEvent(eventId, { participants: updatedParticipants });
-      setMyEvents(prev => prev.filter(e => e.id !== eventId));
-      toast({ title: "Successfully Unregistered" });
-    } else {
-      toast({ variant: "destructive", title: "Failed to Unregister" });
-    }
-  }, [userEmail, myEvents, toast]);
-
-  if (isLoading) {
-    return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
-  }
-
   return (
     <div>
         <h1 className="text-3xl font-bold mb-6">My Registrations</h1>
-        {myEvents.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {myEvents.map(event => (
-                     <EventCard
-                        key={event.id}
-                        event={event}
-                        isRegistered={true}
-                        onRegister={() => {}} // Should not be callable from this page
-                        onUnregister={() => handleUnregister(event.id)}
-                    />
-                ))}
-            </div>
-        ) : (
-             <p className="text-muted-foreground">A list of events you are registered for will appear here.</p>
-        )}
+        <Suspense fallback={<p>Loading your registrations...</p>}>
+            <RegistrationsList />
+        </Suspense>
     </div>
   );
 }

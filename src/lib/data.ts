@@ -94,6 +94,8 @@ export const getEvents = async (): Promise<Event[]> => {
   const eventsCol = collection(db, 'events');
   const eventSnapshot = await getDocs(eventsCol);
   const eventList = eventSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Event));
+  // Sort by date in descending order (newest first)
+  eventList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   return eventList;
 };
 
@@ -201,9 +203,11 @@ const initializeData = async () => {
     }
 };
 
-// Check for initialization
-// This can't be awaited at the top level, so it will run in the background on first app load.
-// A more robust solution might involve a loading screen in the app.
-if (typeof window !== 'undefined') {
-    initializeData().catch(console.error);
-}
+// Check for initialization - this needs to run on the server or in a client-side context.
+// Avoid running it in a way that blocks server-side rendering if possible.
+// A simple check like this is fine for now.
+(async () => {
+    if (typeof window !== 'undefined') {
+        await initializeData().catch(console.error);
+    }
+})();
