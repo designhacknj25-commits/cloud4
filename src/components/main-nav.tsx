@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -13,6 +14,7 @@ import {
   Send,
   Loader2,
   HelpCircle,
+  Cpu,
 } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
@@ -85,7 +87,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
 
   const navItems = role === "teacher" ? teacherNav : studentNav;
 
-  if (isLoading || !user) {
+  if (isLoading || !isAuthenticated || !user) {
+    // Render a minimal loading shell or skeleton state instead of a full-page loader
     return (
         <div className="flex items-center justify-center min-h-screen">
             <Loader2 className="h-16 w-16 animate-spin text-primary" />

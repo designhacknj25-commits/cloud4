@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect } from 'react';
@@ -12,12 +13,14 @@ export default function Home() {
   const { isAuthenticated, role, isLoading } = useAuth();
 
   useEffect(() => {
+    // Redirect only when authentication is confirmed and user is authenticated
     if (!isLoading && isAuthenticated) {
       const redirectPath = role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
       router.replace(redirectPath);
     }
   }, [isAuthenticated, role, isLoading, router]);
   
+  // While loading, or if authenticated, show a loader to prevent flicker before redirect.
   if (isLoading || isAuthenticated) {
     return (
         <div className="flex items-center justify-center min-h-screen">
@@ -26,6 +29,7 @@ export default function Home() {
     );
   }
 
+  // Show this content immediately if not loading and not authenticated.
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-transparent">
       <main className="flex flex-col items-center justify-center w-full flex-1 px-4 sm:px-20 text-center">
