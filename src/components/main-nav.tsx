@@ -80,7 +80,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
          router.push('/login');
       }
     }
-  }, [router, pathname]); // Re-check on path change to update notifications
+  }, [router, pathname, user]); // Re-check on path change or user data change
 
   const handleLogout = () => {
     localStorage.removeItem("userRole");
