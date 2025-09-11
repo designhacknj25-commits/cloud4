@@ -87,8 +87,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
 
   const navItems = role === "teacher" ? teacherNav : studentNav;
 
-  if (isLoading || !isAuthenticated || !user) {
-    // Render a minimal loading shell or skeleton state instead of a full-page loader
+  if (isLoading || !isAuthenticated) {
+    // Show loader while we're determining auth status and redirecting
     return (
         <div className="flex items-center justify-center min-h-screen">
             <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -138,37 +138,39 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           <div className="flex-1">
              {/* Can add breadcrumbs or page title here */}
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                <Avatar className="h-9 w-9">
-                  <AvatarImage src={user.photo || undefined} alt="User avatar" />
-                  <AvatarFallback>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none capitalize">{user.name}</p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    {user.email}
-                  </p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-               <DropdownMenuItem asChild>
-                 <Link href={`/${role}/profile`}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
-                 </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+           {user && (
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                    <Avatar className="h-9 w-9">
+                    <AvatarImage src={user.photo || undefined} alt="User avatar" />
+                    <AvatarFallback>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
+                    </Avatar>
+                </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none capitalize">{user.name}</p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                        {user.email}
+                    </p>
+                    </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                    <Link href={`/${role}/profile`}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Profile</span>
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+           )}
         </header>
         <main className="flex-1 p-4 sm:p-6 overflow-auto pb-20 md:pb-6">
           {children}
