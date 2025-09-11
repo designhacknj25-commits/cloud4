@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -17,6 +18,7 @@ const studentNav = [
   { href: "/student/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/student/registrations", label: "Registrations", icon: BookOpen },
   { href: "/student/ask", label: "Ask", icon: Send },
+  { href: "/student/notifications", label: "Notifications", icon: Bell },
   { href: "/student/faq", label: "FAQ", icon: HelpCircle },
 ];
 
@@ -24,6 +26,7 @@ const teacherNav = [
   { href: "/teacher/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/teacher/events", label: "Events", icon: Calendar },
   { href: "/teacher/inbox", label: "Inbox", icon: Bell },
+  { href: "/teacher/faq", label: "FAQ", icon: HelpCircle },
 ];
 
 export function BottomNav() {
