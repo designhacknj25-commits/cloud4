@@ -77,9 +77,8 @@ export default function ProfilePage() {
         const updatedUser = { ...allUsers[userIndex], ...values };
         allUsers[userIndex] = updatedUser;
         saveUsers(allUsers);
+        setUser(updatedUser); // Update local state for instant feedback
         toast({ title: "Profile Updated", description: "Your information has been saved." });
-        // Refresh the server-side props of the current route.
-        router.refresh(); 
       } else {
         toast({ variant: "destructive", title: "Error", description: "Could not update profile." });
       }

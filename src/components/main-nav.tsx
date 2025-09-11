@@ -144,7 +144,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                 <Avatar className="h-9 w-9">
-                  <AvatarImage src={user.photo || `https://picsum.photos/seed/${role}/100`} alt="User avatar" />
+                  <AvatarImage src={user.photo || undefined} alt="User avatar" />
                   <AvatarFallback>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
                 </Avatar>
               </Button>
