@@ -1,16 +1,30 @@
 
+"use client";
+
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/use-auth";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 export default function Home() {
-  const cookieStore = cookies();
-  const userRole = cookieStore.get('userRole')?.value;
+  const { role, isLoading } = useAuth();
+  const router = useRouter();
 
-  if (userRole) {
-    const redirectPath = userRole === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
-    redirect(redirectPath);
+  useEffect(() => {
+    if (!isLoading && role) {
+      const redirectPath = role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
+      router.replace(redirectPath);
+    }
+  }, [role, isLoading, router]);
+
+  if (isLoading || role) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-transparent">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   return (

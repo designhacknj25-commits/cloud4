@@ -1,12 +1,9 @@
-import { getEvents, type Event } from '@/lib/data';
+
+"use client";
+
 import { Suspense } from 'react';
 import { StudentEventList } from './_components/student-event-list';
 import { Loader2 } from 'lucide-react';
-
-async function Events() {
-  const events = await getEvents();
-  return <StudentEventList initialEvents={events} />;
-}
 
 export default function StudentDashboard() {
   return (
@@ -15,7 +12,7 @@ export default function StudentDashboard() {
         <h1 className="text-3xl font-bold">Upcoming Events</h1>
       </div>
       <Suspense fallback={<div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
-        <Events />
+        <StudentEventList />
       </Suspense>
     </div>
   );

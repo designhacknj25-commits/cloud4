@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect, useContext } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getEvents, addNotification, type Event } from "@/lib/data";
-import { getCookie } from "@/lib/utils";
+import { UserContext } from "@/context/user-context";
 
 const askSchema = z.object({
   question: z.string().min(10, "Please ask a more detailed question."),
@@ -21,15 +21,15 @@ const askSchema = z.object({
 export default function AskTeacherPage() {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
-  const userEmail = getCookie("userEmail");
-  
+  const { user } = useContext(UserContext);
+
   const form = useForm<z.infer<typeof askSchema>>({
     resolver: zodResolver(askSchema),
     defaultValues: { question: "" },
   });
   
-  const findMyTeacherEmail = async (studentEmail: string) => {
-      const events: Event[] = await getEvents();
+  const findMyTeacherEmail = (studentEmail: string) => {
+      const events: Event[] = getEvents();
       const myEvents = events.filter(e => e.participants.includes(studentEmail));
       
       if (myEvents.length > 0) {
@@ -40,22 +40,22 @@ export default function AskTeacherPage() {
   }
 
   function onSubmit(values: z.infer<typeof askSchema>) {
-    startTransition(async () => {
+    startTransition(() => {
       try {
-        if (!userEmail) throw new Error("Student not logged in.");
+        if (!user || !user.email) throw new Error("Student not logged in.");
 
-        const teacherEmail = await findMyTeacherEmail(userEmail);
+        const teacherEmail = findMyTeacherEmail(user.email);
 
         if (teacherEmail) {
             const newNotification = {
                 id: `notif${Date.now()}`,
-                from: userEmail,
+                from: user.email,
                 message: values.question,
                 date: new Date().toISOString(),
                 read: false,
             };
 
-            const success = await addNotification(teacherEmail, newNotification);
+            const success = addNotification(teacherEmail, newNotification);
             
             if (success) {
                 toast({
@@ -113,7 +113,7 @@ export default function AskTeacherPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isPending || !userEmail}>
+              <Button type="submit" className="w-full" disabled={isPending || !user}>
                 {isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (

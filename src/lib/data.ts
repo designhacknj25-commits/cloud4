@@ -1,5 +1,6 @@
-import { db } from './firebase';
-import { collection, getDocs, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, where, writeBatch } from "firebase/firestore";
+
+// Guard for server-side rendering
+const isBrowser = typeof window !== 'undefined';
 
 export type Event = {
   id: string;
@@ -23,12 +24,12 @@ export interface Notification {
 }
 
 export type User = {
-    id?: string; // Firestore ID
+    id: string; 
     name: string;
     email: string;
-    password?: string; // Should not be stored in plaintext in a real app
+    password?: string; 
     role: "student" | "teacher";
-    photo: string; // Will store as a data URI
+    photo: string; // data URI
     bio: string;
     notifications: Notification[];
 }
@@ -40,174 +41,207 @@ export type FAQ = {
 };
 
 // =================================================================
-// Universal Data Access Functions using Firestore
+// Data Seeding and Initialization
+// =================================================================
+
+const defaultUsers: User[] = [
+    {
+        id: 'user1',
+        name: "Test Student",
+        email: "student@test.com",
+        password: "password",
+        role: "student",
+        photo: "",
+        bio: "Eager to learn and participate in campus events!",
+        notifications: []
+    },
+    {
+        id: 'user2',
+        name: "Test Teacher",
+        email: "teacher@test.com",
+        password: "password",
+        role: "teacher",
+        photo: "",
+        bio: "Dedicated to fostering a vibrant learning community.",
+        notifications: [
+            { id: "notif1", from: "student@test.com", message: "Can I get an extension on the assignment?", date: new Date(Date.now() - 86400000).toISOString(), read: false },
+            { id: "notif2", from: "student@test.com", message: "What are the topics for the next seminar?", date: new Date(Date.now() - 172800000).toISOString(), read: true },
+        ]
+    }
+];
+
+const defaultFaqs: FAQ[] = [
+    {
+        id: 'faq1',
+        question: 'What is the deadline for project submission?',
+        answer: 'The final project deadline is May 15th at 11:59 PM. No late submissions will be accepted.',
+    },
+    {
+        id: 'faq2',
+        question: 'Where can I find the course materials?',
+        answer: 'All course materials, including lecture slides and recordings, are available on the "Materials" tab of the course portal.',
+    },
+];
+
+const defaultEvents: Event[] = [
+    {
+        id: 'event1',
+        title: "Intro to AI Workshop",
+        description: "A beginner-friendly workshop on the fundamentals of Artificial Intelligence.",
+        category: "Workshop",
+        date: new Date(Date.now() + 604800000).toISOString(), // 1 week from now
+        deadline: new Date(Date.now() + 432000000).toISOString(), // 5 days from now
+        limit: 50,
+        poster: "https://picsum.photos/seed/event1/600/400",
+        teacherEmail: "teacher@test.com",
+        participants: ["student@test.com"]
+    },
+    {
+        id: 'event2',
+        title: "Campus Movie Night",
+        description: "Join us for an outdoor screening of a classic film. Popcorn provided!",
+        category: "Social",
+        date: new Date(Date.now() + 1209600000).toISOString(), // 2 weeks from now
+        deadline: new Date(Date.now() + 1036800000).toISOString(), // 12 days from now
+        limit: 0, // unlimited
+        poster: "https://picsum.photos/seed/event2/600/400",
+        teacherEmail: "teacher@test.com",
+        participants: []
+    }
+];
+
+
+const initializeData = () => {
+    if (!isBrowser) return;
+    if (!localStorage.getItem('mycampus_users')) {
+        localStorage.setItem('mycampus_users', JSON.stringify(defaultUsers));
+    }
+    if (!localStorage.getItem('mycampus_events')) {
+        localStorage.setItem('mycampus_events', JSON.stringify(defaultEvents));
+    }
+     if (!localStorage.getItem('mycampus_faqs')) {
+        localStorage.setItem('mycampus_faqs', JSON.stringify(defaultFaqs));
+    }
+};
+
+// Initialize data on load
+initializeData();
+
+// =================================================================
+// Universal Data Access Functions using localStorage
 // =================================================================
 
 // --- Users ---
-export const getUserByEmail = async (email: string): Promise<User | null> => {
-  const usersRef = collection(db, "users");
-  const q = query(usersRef, where("email", "==", email));
-  const querySnapshot = await getDocs(q);
-  if (querySnapshot.empty) {
-    return null;
-  }
-  const userDoc = querySnapshot.docs[0];
-  return { id: userDoc.id, ...userDoc.data() } as User;
+
+export const getAllUsers = (): User[] => {
+    if (!isBrowser) return [];
+    const usersJson = localStorage.getItem('mycampus_users');
+    return usersJson ? JSON.parse(usersJson) : [];
+}
+
+export const getUserByEmail = (email: string): User | null => {
+  if (!isBrowser) return null;
+  const users = getAllUsers();
+  return users.find(u => u.email === email) || null;
 };
 
-export const getAllUsers = async (): Promise<User[]> => {
-    const usersCol = collection(db, 'users');
-    const userSnapshot = await getDocs(usersCol);
-    const userList = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-    return userList;
+export const addUser = (user: Omit<User, 'id'>): string => {
+    if (!isBrowser) return '';
+    const users = getAllUsers();
+    const newUser = { ...user, id: `user${Date.now()}`};
+    const updatedUsers = [...users, newUser];
+    localStorage.setItem('mycampus_users', JSON.stringify(updatedUsers));
+    return newUser.id;
 }
 
-
-export const addUser = async (user: Omit<User, 'id'>): Promise<string> => {
-    const usersRef = collection(db, "users");
-    const docRef = await addDoc(usersRef, user);
-    return docRef.id;
+export const updateUser = (userId: string, userData: Partial<User>): void => {
+    if (!isBrowser) return;
+    let users = getAllUsers();
+    users = users.map(u => u.id === userId ? { ...u, ...userData } : u);
+    localStorage.setItem('mycampus_users', JSON.stringify(users));
 }
 
-export const updateUser = async (userId: string, userData: Partial<User>): Promise<void> => {
-    const userRef = doc(db, "users", userId);
-    await updateDoc(userRef, userData);
-}
-
-export const addNotification = async (email: string, notification: Notification) => {
-    const user = await getUserByEmail(email);
+export const addNotification = (email: string, notification: Notification): boolean => {
+    if (!isBrowser) return false;
+    const user = getUserByEmail(email);
     if (user && user.id) {
         const updatedNotifications = [notification, ...user.notifications];
-        await updateUser(user.id, { notifications: updatedNotifications });
+        updateUser(user.id, { notifications: updatedNotifications });
         return true;
     }
     return false;
 };
 
-export const updateNotifications = async (userId: string, notifications: Notification[]) => {
-    await updateUser(userId, { notifications });
+export const updateNotifications = (userId: string, notifications: Notification[]) => {
+    if (!isBrowser) return;
+    updateUser(userId, { notifications });
 };
 
 
 // --- Events ---
-export const getEvents = async (): Promise<Event[]> => {
-  const eventsCol = collection(db, 'events');
-  const eventSnapshot = await getDocs(eventsCol);
-  const eventList = eventSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Event));
-  // Sort by date in descending order (newest first)
-  eventList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  return eventList;
+export const getEvents = (): Event[] => {
+    if (!isBrowser) return [];
+    const eventsJson = localStorage.getItem('mycampus_events');
+    const eventList = eventsJson ? JSON.parse(eventsJson) : [];
+    // Ensure sorting returns a consistent order
+    return eventList.sort((a: Event, b: Event) => new Date(a.date).getTime() - new Date(b.date).getTime());
 };
 
-export const getEventById = async (id: string): Promise<Event | null> => {
-    const eventRef = doc(db, "events", id);
-    const eventSnap = await getDoc(eventRef);
-    if(eventSnap.exists()) {
-        return { id: eventSnap.id, ...eventSnap.data() } as Event;
-    }
-    return null;
+export const getEventById = (id: string): Event | null => {
+    if (!isBrowser) return null;
+    const events = getEvents();
+    return events.find(e => e.id === id) || null;
 }
 
-export const addEvent = async (event: Omit<Event, 'id'>): Promise<string> => {
-    const docRef = await addDoc(collection(db, 'events'), event);
-    return docRef.id;
+export const addEvent = (event: Omit<Event, 'id'>): string => {
+    if (!isBrowser) return '';
+    const events = getEvents();
+    const newEvent = { ...event, id: `event${Date.now()}` };
+    const updatedEvents = [newEvent, ...events];
+    localStorage.setItem('mycampus_events', JSON.stringify(updatedEvents));
+    return newEvent.id;
 }
 
-export const updateEvent = async (eventId: string, eventData: Partial<Event>): Promise<void> => {
-    const eventRef = doc(db, "events", eventId);
-    await updateDoc(eventRef, eventData);
+export const updateEvent = (eventId: string, eventData: Partial<Event>): void => {
+    if (!isBrowser) return;
+    let events = getEvents();
+    events = events.map(e => e.id === eventId ? { ...e, ...eventData } : e);
+    localStorage.setItem('mycampus_events', JSON.stringify(events));
 }
 
-export const deleteEvent = async (eventId: string): Promise<void> => {
-    await deleteDoc(doc(db, "events", eventId));
+export const deleteEvent = (eventId: string): void => {
+    if (!isBrowser) return;
+    let events = getEvents();
+    events = events.filter(e => e.id !== eventId);
+    localStorage.setItem('mycampus_events', JSON.stringify(events));
 }
 
 // --- FAQs ---
-export const getFaqs = async (): Promise<FAQ[]> => {
-  const faqsCol = collection(db, 'faqs');
-  const faqSnapshot = await getDocs(faqsCol);
-  return faqSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FAQ));
+export const getFaqs = (): FAQ[] => {
+  if (!isBrowser) return [];
+  const faqsJson = localStorage.getItem('mycampus_faqs');
+  return faqsJson ? JSON.parse(faqsJson) : [];
 };
 
-export const addFaq = async (faq: Omit<FAQ, 'id'>): Promise<string> => {
-    const docRef = await addDoc(collection(db, "faqs"), faq);
-    return docRef.id;
+export const addFaq = (faq: Omit<FAQ, 'id'>): string => {
+    if (!isBrowser) return '';
+    const faqs = getFaqs();
+    const newFaq = { ...faq, id: `faq${Date.now()}` };
+    const updatedFaqs = [...faqs, newFaq];
+    localStorage.setItem('mycampus_faqs', JSON.stringify(updatedFaqs));
+    return newFaq.id;
 };
 
-export const updateFaq = async (faqId: string, faqData: Partial<FAQ>): Promise<void> => {
-    const faqRef = doc(db, "faqs", faqId);
-    await updateDoc(faqRef, faqData);
+export const updateFaq = (faqId: string, faqData: Partial<FAQ>): void => {
+    if (!isBrowser) return;
+    let faqs = getFaqs();
+    faqs = faqs.map(f => f.id === faqId ? { ...f, ...faqData } : f);
+    localStorage.setItem('mycampus_faqs', JSON.stringify(faqs));
 };
 
-export const deleteFaq = async (faqId: string): Promise<void> => {
-    await deleteDoc(doc(db, "faqs", faqId));
+export const deleteFaq = (faqId: string): void => {
+    if (!isBrowser) return;
+    let faqs = getFaqs();
+    faqs = faqs.filter(f => f.id !== faqId);
+    localStorage.setItem('mycampus_faqs', JSON.stringify(faqs));
 };
-
-
-// --- Initialization for first time use ---
-const initializeData = async () => {
-    const metaRef = doc(db, 'meta', 'initialized');
-    const metaSnap = await getDoc(metaRef);
-
-    if (!metaSnap.exists()) {
-        console.log("First time setup: Initializing default data...");
-        const batch = writeBatch(db);
-
-        // Add default users
-        const defaultUsers: Omit<User, 'id'>[] = [
-            {
-                name: "Test Student",
-                email: "student@test.com",
-                password: "password",
-                role: "student",
-                photo: "",
-                bio: "Eager to learn and participate in campus events!",
-                notifications: []
-            },
-            {
-                name: "Test Teacher",
-                email: "teacher@test.com",
-                password: "password",
-                role: "teacher",
-                photo: "",
-                bio: "Dedicated to fostering a vibrant learning community.",
-                notifications: []
-            }
-        ];
-        defaultUsers.forEach(user => {
-            const userRef = doc(collection(db, 'users'));
-            batch.set(userRef, user);
-        });
-
-        // Add default FAQs
-        const defaultFaqs: Omit<FAQ, 'id'>[] = [
-            {
-                question: 'What is the deadline for project submission?',
-                answer: 'The final project deadline is May 15th at 11:59 PM. No late submissions will be accepted.',
-            },
-            {
-                question: 'Where can I find the course materials?',
-                answer: 'All course materials, including lecture slides and recordings, are available on the "Materials" tab of the course portal.',
-            },
-        ];
-        defaultFaqs.forEach(faq => {
-            const faqRef = doc(collection(db, 'faqs'));
-            batch.set(faqRef, faq);
-        });
-
-        // Set the initialized flag
-        batch.set(metaRef, { status: true, initializedAt: new Date().toISOString() });
-
-        await batch.commit();
-        console.log("Default data initialization complete.");
-    }
-};
-
-// Check for initialization - this needs to run on the server or in a client-side context.
-// Avoid running it in a way that blocks server-side rendering if possible.
-// A simple check like this is fine for now.
-(async () => {
-    if (typeof window !== 'undefined') {
-        await initializeData().catch(console.error);
-    }
-})();

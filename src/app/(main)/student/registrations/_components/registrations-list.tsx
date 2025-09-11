@@ -15,10 +15,10 @@ export function RegistrationsList() {
   
   const userEmail = getCookie('userEmail');
 
-  const fetchMyEvents = useCallback(async () => {
+  const fetchMyEvents = useCallback(() => {
       if (userEmail) {
         setIsLoading(true);
-        const allEvents = await getEvents();
+        const allEvents = getEvents();
         const registered = allEvents.filter(event => event.participants.includes(userEmail));
         setMyEvents(registered);
         setIsLoading(false);
@@ -30,14 +30,14 @@ export function RegistrationsList() {
     fetchMyEvents();
   }, [fetchMyEvents]);
 
-  const handleUnregister = useCallback(async (eventId: string) => {
+  const handleUnregister = useCallback((eventId: string) => {
     if (!userEmail) return;
 
     const eventToUpdate = myEvents.find(e => e.id === eventId);
 
     if (eventToUpdate) {
       const updatedParticipants = eventToUpdate.participants.filter(p => p !== userEmail);
-      await updateEvent(eventId, { participants: updatedParticipants });
+      updateEvent(eventId, { participants: updatedParticipants });
       setMyEvents(prev => prev.filter(e => e.id !== eventId));
       toast({ title: "Successfully Unregistered" });
     } else {

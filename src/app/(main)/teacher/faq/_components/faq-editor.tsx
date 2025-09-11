@@ -1,10 +1,11 @@
+
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { addFaq, updateFaq, deleteFaq, type FAQ } from "@/lib/data";
+import { addFaq, updateFaq, deleteFaq, getFaqs, type FAQ } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus } from "lucide-react";
@@ -35,16 +36,18 @@ const faqSchema = z.object({
   answer: z.string().min(10, "Answer must be at least 10 characters."),
 });
 
-interface FaqEditorProps {
-    initialFaqs: FAQ[];
-}
-
-export function FaqEditor({ initialFaqs }: FaqEditorProps) {
-  const [faqs, setFaqs] = useState<FAQ[]>(initialFaqs);
+export function FaqEditor() {
+  const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isFormPending, startFormTransition] = useTransition();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFaq, setEditingFaq] = useState<FAQ | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setFaqs(getFaqs());
+    setIsLoading(false);
+  }, []);
 
   const form = useForm<z.infer<typeof faqSchema>>({
     resolver: zodResolver(faqSchema),
@@ -58,28 +61,32 @@ export function FaqEditor({ initialFaqs }: FaqEditorProps) {
   };
 
   const handleDelete = (faqId: string) => {
-    startFormTransition(async () => {
-      await deleteFaq(faqId);
+    startFormTransition(() => {
+      deleteFaq(faqId);
       setFaqs(prev => prev.filter(f => f.id !== faqId));
       toast({ title: "FAQ Deleted" });
     });
   };
 
   const onSubmit = (values: z.infer<typeof faqSchema>) => {
-    startFormTransition(async () => {
+    startFormTransition(() => {
         if (editingFaq) {
-            await updateFaq(editingFaq.id, { question: values.question, answer: values.answer });
-            setFaqs(prev => prev.map(f => f.id === editingFaq.id ? { ...f, ...values } : f));
+            updateFaq(editingFaq.id, { question: values.question, answer: values.answer });
+            setFaqs(getFaqs());
             toast({ title: "FAQ Updated" });
         } else {
             const { question, answer } = values;
-            const newFaqId = await addFaq({ question, answer });
-            setFaqs(prev => [...prev, { id: newFaqId, question, answer }]);
+            addFaq({ question, answer });
+            setFaqs(getFaqs());
             toast({ title: "FAQ Added" });
         }
         setIsDialogOpen(false);
     });
   };
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
 
   return (
     <>

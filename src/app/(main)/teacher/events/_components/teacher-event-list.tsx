@@ -33,11 +33,12 @@ export function TeacherEventList() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchData = () => {
             setIsLoading(true);
             const userEmail = getCookie('userEmail');
             if (userEmail) {
-                const [allEvents, allUsers] = await Promise.all([getEvents(), getAllUsers()]);
+                const allEvents = getEvents();
+                const allUsers = getAllUsers();
                 setUsers(allUsers);
                 setEvents(allEvents.filter(e => e.teacherEmail === userEmail));
             }
@@ -46,9 +47,9 @@ export function TeacherEventList() {
         fetchData();
     }, []);
 
-    const deleteEvent = async (eventId: string) => {
+    const deleteEvent = (eventId: string) => {
         try {
-            await deleteEventFromDb(eventId);
+            deleteEventFromDb(eventId);
             setEvents(prevEvents => prevEvents.filter(e => e.id !== eventId));
             toast({ title: "Event Deleted" });
         } catch (error) {

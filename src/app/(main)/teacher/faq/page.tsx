@@ -1,9 +1,9 @@
-import { getFaqs, type FAQ } from "@/lib/data";
+
+"use client";
+
 import { FaqEditor } from "./_components/faq-editor";
 
-export default async function ManageFaqsPage() {
-  const faqs: FAQ[] = await getFaqs();
-  
+export default function ManageFaqsPage() {
   return (
     <div className="container mx-auto">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
@@ -12,9 +12,7 @@ export default async function ManageFaqsPage() {
           <p className="text-muted-foreground">Create and edit FAQs for your students.</p>
         </div>
       </div>
-
-      <FaqEditor initialFaqs={faqs} />
-      
+      <FaqEditor />
     </div>
   );
 }

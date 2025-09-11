@@ -36,7 +36,7 @@ const signupSchema = formSchema.refine((data) => !!data.name && data.name.length
   path: ["name"],
 });
 
-async function setAuthCookies(role: string, email: string) {
+function setAuthCookies(role: string, email: string) {
     document.cookie = `userRole=${role}; path=/; max-age=604800`; // 7 days
     document.cookie = `userEmail=${email}; path=/; max-age=604800`; // 7 days
 }
@@ -63,15 +63,15 @@ export function AuthForm() {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
       if (isLoginPage) {
-        const user = await getUserByEmail(values.email);
+        const user = getUserByEmail(values.email);
         
         if (user && user.password === values.password) {
             if (user.role === values.role) {
-                await setAuthCookies(user.role, user.email);
+                setAuthCookies(user.role, user.email);
                 toast({
                     title: "Login Successful",
                     description: `Welcome back, ${user.name}!`,
@@ -94,7 +94,7 @@ export function AuthForm() {
             });
         }
       } else { // Signup
-        const existingUser = await getUserByEmail(values.email);
+        const existingUser = getUserByEmail(values.email);
         if (existingUser) {
            toast({
                 variant: "destructive",
@@ -114,7 +114,7 @@ export function AuthForm() {
             notifications: [] 
         };
 
-        await addUser(newUser);
+        addUser(newUser);
         
         toast({
             title: "Signup Successful",

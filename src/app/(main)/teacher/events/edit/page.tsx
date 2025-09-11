@@ -31,19 +31,19 @@ export default function EditEventPage() {
   const { toast } = useToast();
   const [event, setEvent] = useState<Event | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isLoading, setIsLoading] = useState(true);
   
   const form = useForm<z.infer<typeof eventSchema>>({
     resolver: zodResolver(eventSchema),
   });
 
   useEffect(() => {
-    const fetchEvent = async () => {
+    const fetchEvent = () => {
         const eventId = localStorage.getItem('editEventId');
         if (eventId) {
-            const currentEvent = await getEventById(eventId);
+            const currentEvent = getEventById(eventId);
             if (currentEvent) {
                 setEvent(currentEvent);
-                // Format dates to 'yyyy-MM-ddTHH:mm' for datetime-local input
                 const formattedDate = format(new Date(currentEvent.date), "yyyy-MM-dd'T'HH:mm");
                 const formattedDeadline = format(new Date(currentEvent.deadline), "yyyy-MM-dd'T'HH:mm");
 
@@ -60,15 +60,16 @@ export default function EditEventPage() {
             toast({ variant: 'destructive', title: 'Error', description: 'No event selected to edit.' });
             router.push('/teacher/events');
         }
+        setIsLoading(false);
     };
     fetchEvent();
   }, [form, router, toast]);
 
   const onSubmit = (values: z.infer<typeof eventSchema>) => {
-    startTransition(async () => {
+    startTransition(() => {
         if (!event) return;
         try {
-            await updateEvent(event.id, values);
+            updateEvent(event.id, values);
             toast({
                 title: 'Event Updated!',
                 description: `The event "${values.title}" has been successfully updated.`,
@@ -82,7 +83,7 @@ export default function EditEventPage() {
     });
   };
 
-  if (!event) {
+  if (isLoading || !event) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 

@@ -1,39 +1,22 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useContext } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { updateNotifications, getUserByEmail, type User } from "@/lib/data";
+import { updateNotifications } from "@/lib/data";
 import { Loader2 } from "lucide-react";
-import { getCookie } from "@/lib/utils";
+import { UserContext } from "@/context/user-context";
+
 
 export default function NotificationsPage() {
-    const [user, setUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const { user, refetchUser } = useContext(UserContext);
     
-    const fetchUser = useCallback(async () => {
-        const userEmail = getCookie("userEmail");
-        if (userEmail) {
-            setIsLoading(true);
-            const currentUser = await getUserByEmail(userEmail);
-            setUser(currentUser);
-            setIsLoading(false);
-        } else {
-            setIsLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchUser();
-    }, [fetchUser]);
-    
-    const markAsRead = async (notificationId: string) => {
+    const markAsRead = (notificationId: string) => {
         if (!user || !user.id || !user.notifications) return;
         
         const notification = user.notifications.find(n => n.id === notificationId);
-        // Don't do anything if it's already read
         if (notification && notification.read) {
             return;
         }
@@ -42,11 +25,11 @@ export default function NotificationsPage() {
             n.id === notificationId ? { ...n, read: true } : n
         );
         
-        await updateNotifications(user.id, updatedNotifications);
-        fetchUser(); // Refetch user to update state
+        updateNotifications(user.id, updatedNotifications);
+        refetchUser(); // Refetch user to update state
     };
 
-  if(isLoading) {
+  if(!user) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
@@ -58,8 +41,8 @@ export default function NotificationsPage() {
       </div>
 
       <div className="space-y-4">
-        {user && user.notifications && user.notifications.length > 0 ? (
-          user.notifications.map((notif) => (
+        {user.notifications && user.notifications.length > 0 ? (
+          [...user.notifications].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((notif) => (
             <Card 
                 key={notif.id} 
                 className={`bg-card/50 cursor-pointer transition-all ${!notif.read ? 'border-primary/50' : ''}`}

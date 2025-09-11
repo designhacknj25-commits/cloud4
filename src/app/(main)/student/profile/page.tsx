@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, useContext } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -12,11 +12,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { getUserByEmail, updateUser, type User } from "@/lib/data";
+import { updateUser } from "@/lib/data";
 import { Loader2, Upload } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { getCookie } from "@/lib/utils";
-
+import { UserContext } from "@/context/user-context";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -26,7 +24,7 @@ const profileSchema = z.object({
 
 export default function ProfilePage() {
   const { toast } = useToast();
-  const [user, setUser] = useState<User | null>(null);
+  const { user, refetchUser } = useContext(UserContext);
   const [isPending, startTransition] = useTransition();
   const [preview, setPreview] = useState<string>("");
 
@@ -36,23 +34,15 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const userEmail = getCookie("userEmail");
-      if (userEmail) {
-        const currentUser = await getUserByEmail(userEmail);
-        if (currentUser) {
-          setUser(currentUser);
-          form.reset({
-            name: currentUser.name,
-            bio: currentUser.bio,
-            photo: currentUser.photo,
-          });
-          setPreview(currentUser.photo);
-        }
-      }
-    };
-    fetchUser();
-  }, [form]);
+    if (user) {
+        form.reset({
+            name: user.name,
+            bio: user.bio,
+            photo: user.photo,
+        });
+        setPreview(user.photo);
+    }
+  }, [user, form]);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -68,15 +58,15 @@ export default function ProfilePage() {
   };
 
   const onSubmit = (values: z.infer<typeof profileSchema>) => {
-    startTransition(async () => {
+    startTransition(() => {
       if (!user || !user.id) {
         toast({ variant: "destructive", title: "Error", description: "User not found." });
         return;
       }
       
       try {
-        await updateUser(user.id, values);
-        setUser(prevUser => prevUser ? { ...prevUser, ...values } : null);
+        updateUser(user.id, values);
+        refetchUser(); // Refresh context
         toast({ title: "Profile Updated", description: "Your information has been saved." });
       } catch (error) {
         console.error("Profile update error:", error);

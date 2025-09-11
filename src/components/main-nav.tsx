@@ -1,9 +1,9 @@
 
 "use client";
 
-import React from "react";
+import React, { useContext } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Bell,
   BookOpen,
@@ -14,6 +14,7 @@ import {
   Send,
   HelpCircle,
   Cpu,
+  Loader2,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -36,7 +37,8 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { BottomNav } from "./bottom-nav";
-import type { User } from "@/lib/data";
+import { useAuth } from "@/hooks/use-auth";
+import { UserContext } from "@/context/user-context";
 
 const studentNav = [
   { href: "/student/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -56,17 +58,14 @@ const teacherNav = [
 
 export function MainNav({ 
   children,
-  user,
-  role
 }: { 
   children: React.ReactNode,
-  user: User | null,
-  role: string | null
 }) {
   const pathname = usePathname();
+  const { role } = useAuth();
+  const { user, isLoading } = useContext(UserContext);
   
   const handleLogout = () => {
-    // This is a client-side action
     document.cookie = "userRole=; path=/; max-age=0";
     document.cookie = "userEmail=; path=/; max-age=0";
     window.location.href = "/login";
@@ -117,7 +116,9 @@ export function MainNav({
           <div className="flex-1">
              {/* Can add breadcrumbs or page title here */}
           </div>
-           {user && (
+           {isLoading ? (
+             <Loader2 className="h-5 w-5 animate-spin" />
+           ) : user ? (
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
@@ -149,7 +150,7 @@ export function MainNav({
                 </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
-           )}
+           ) : null}
         </header>
         <main className="flex-1 p-4 sm:p-6 overflow-auto pb-20 md:pb-6">
           {children}

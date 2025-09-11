@@ -1,3 +1,6 @@
+
+"use client";
+
 import { RegistrationsList } from './_components/registrations-list';
 import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';

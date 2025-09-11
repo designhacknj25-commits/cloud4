@@ -10,14 +10,20 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { getCookie } from '@/lib/utils';
 
-export function StudentEventList({ initialEvents }: { initialEvents: Event[] }) {
+export function StudentEventList() {
   const { toast } = useToast();
-  const [events, setEvents] = useState<Event[]>(initialEvents);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [category, setCategory] = useState('all');
   const [isPending, startTransition] = useTransition();
 
   const userEmail = getCookie('userEmail');
+
+  useEffect(() => {
+    setEvents(getEvents());
+    setIsLoading(false);
+  }, []);
 
   const registeredEvents = useMemo(() => {
     if (!userEmail) return [];
@@ -33,12 +39,12 @@ export function StudentEventList({ initialEvents }: { initialEvents: Event[] }) 
   }, [events, searchTerm, category]);
 
   const handleRegister = (eventId: string) => {
-    startTransition(async () => {
+    startTransition(() => {
       const eventToUpdate = events.find(e => e.id === eventId);
       
       if (eventToUpdate && userEmail && !eventToUpdate.participants.includes(userEmail)) {
         const updatedParticipants = [...eventToUpdate.participants, userEmail];
-        await updateEvent(eventId, { participants: updatedParticipants });
+        updateEvent(eventId, { participants: updatedParticipants });
         
         // Optimistically update the UI
         setEvents(prevEvents => prevEvents.map(e => e.id === eventId ? { ...e, participants: updatedParticipants } : e));
@@ -51,12 +57,12 @@ export function StudentEventList({ initialEvents }: { initialEvents: Event[] }) 
   };
 
   const handleUnregister = (eventId: string) => {
-    startTransition(async () => {
+    startTransition(() => {
       const eventToUpdate = events.find(e => e.id === eventId);
       
       if (eventToUpdate && userEmail) {
         const updatedParticipants = eventToUpdate.participants.filter(p => p !== userEmail);
-        await updateEvent(eventId, { participants: updatedParticipants });
+        updateEvent(eventId, { participants: updatedParticipants });
 
         // Optimistically update the UI
         setEvents(prevEvents => prevEvents.map(e => e.id === eventId ? { ...e, participants: updatedParticipants } : e));
@@ -69,6 +75,10 @@ export function StudentEventList({ initialEvents }: { initialEvents: Event[] }) 
   };
 
   const categories = ['all', 'Workshop', 'Seminar', 'Social', 'Sports'];
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
+  }
 
   return (
     <>

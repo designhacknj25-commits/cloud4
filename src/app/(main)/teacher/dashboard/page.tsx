@@ -1,28 +1,34 @@
-import { getEvents, getUserByEmail, type Event, type Notification } from '@/lib/data';
+
+"use client";
+
+import { getEvents, type Event } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { CalendarCheck, Users, MessageSquare } from 'lucide-react';
+import { CalendarCheck, Users, MessageSquare, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { useState, useEffect, useContext } from 'react';
+import { UserContext } from '@/context/user-context';
 
-export default async function TeacherDashboard() {
-  const cookieStore = cookies();
-  const userEmail = cookieStore.get('userEmail')?.value;
+export default function TeacherDashboard() {
+  const { user } = useContext(UserContext);
+  const [myEvents, setMyEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  if (!userEmail) {
-    redirect('/login');
+  useEffect(() => {
+    if (user && user.email) {
+      const allEvents = getEvents();
+      const teacherEvents = allEvents.filter(e => e.teacherEmail === user.email);
+      setMyEvents(teacherEvents);
+    }
+    setIsLoading(false);
+  }, [user]);
+
+  if (isLoading || !user) {
+    return <div className="flex h-full w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
-  const user = await getUserByEmail(userEmail);
-  if (!user) {
-    redirect('/login');
-  }
-
-  const allEvents = await getEvents();
-  const myEvents = allEvents.filter(e => e.teacherEmail === user.email);
   const totalParticipants = myEvents.reduce((acc, curr) => acc + curr.participants.length, 0);
   
   const stats = {
@@ -30,14 +36,15 @@ export default async function TeacherDashboard() {
     totalParticipants,
   };
 
-  const recentNotifications = user.notifications.slice(0, 5);
-  const unreadMessages = user ? user.notifications.filter(n => !n.read).length : 0;
+  const recentNotifications = user.notifications
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5);
+  const unreadMessages = user.notifications.filter(n => !n.read).length;
 
   return (
     <div className="container mx-auto">
       <h1 className="text-3xl font-bold mb-6">Teacher Dashboard</h1>
       
-      {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
         <Card className="bg-card/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -71,7 +78,6 @@ export default async function TeacherDashboard() {
         </Card>
       </div>
 
-      {/* Recent Activity */}
       <Card className="bg-card/50">
           <CardHeader>
               <CardTitle>Recent Student Questions</CardTitle>

@@ -45,7 +45,7 @@ export default function CreateEventPage() {
   });
 
   const onSubmit = (values: z.infer<typeof eventSchema>) => {
-    startTransition(async () => {
+    startTransition(() => {
         try {
             const newEvent = {
                 ...values,
@@ -54,7 +54,7 @@ export default function CreateEventPage() {
                 participants: [],
             };
             
-            await addEvent(newEvent);
+            addEvent(newEvent);
 
             toast({
             title: 'Event Created!',
