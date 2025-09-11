@@ -9,7 +9,8 @@ import {
   LayoutDashboard,
   HelpCircle,
   Send,
-  Bell
+  Bell,
+  Cpu,
 } from "lucide-react";
 import { useUserRole } from "@/hooks/use-user-role";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ const teacherNav = [
   { href: "/teacher/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/teacher/events", label: "Events", icon: Calendar },
   { href: "/teacher/inbox", label: "Inbox", icon: Bell },
+  { href: "/teacher/assistant", label: "Assistant", icon: Cpu },
   { href: "/teacher/faq", label: "FAQ", icon: HelpCircle },
 ];
 
