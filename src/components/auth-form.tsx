@@ -110,7 +110,8 @@ export function AuthForm() {
             title: "Login Successful",
             description: `Welcome back, ${result.name}!`,
           });
-          router.push('/');
+          const redirectPath = result.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
+          router.push(redirectPath);
         } else {
           toast({
             variant: "destructive",

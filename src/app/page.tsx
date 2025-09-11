@@ -15,7 +15,7 @@ export default function Home() {
       const redirectPath = userRole === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
       router.replace(redirectPath);
     }
-  });
+  }, [router]);
   
   // Show a loading or splash screen while checking auth
   if (typeof window !== 'undefined' && localStorage.getItem('userRole')) {
