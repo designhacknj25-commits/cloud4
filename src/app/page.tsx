@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { Loader2 } from 'lucide-react';
 
 export default function Home() {
   const router = useRouter();
@@ -14,10 +15,17 @@ export default function Home() {
       const redirectPath = userRole === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
       router.replace(redirectPath);
     }
-    // No dependency array, we want this to run on every render of this page
-    // to prevent a logged-in user from seeing it.
   });
   
+  // Show a loading or splash screen while checking auth
+  if (typeof window !== 'undefined' && localStorage.getItem('userRole')) {
+    return (
+        <div className="flex items-center justify-center min-h-screen">
+            <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-transparent">
       <main className="flex flex-col items-center justify-center w-full flex-1 px-4 sm:px-20 text-center">
