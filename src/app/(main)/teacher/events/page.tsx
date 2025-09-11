@@ -20,7 +20,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function ManageEventsPage() {
     const router = useRouter();
@@ -40,14 +41,9 @@ export default function ManageEventsPage() {
         setEvents(prevEvents => prevEvents.filter(e => e.id !== eventId));
         toast({ title: "Event Deleted" });
     };
-    
-    const viewParticipants = (eventId: string) => {
-        const event = events.find(e => e.id === eventId);
-        if (!event) return;
-        const participants = event.participants.length > 0 
-            ? event.participants.join('\n') 
-            : 'No participants yet.';
-        alert(`Participants for ${event.title}:\n\n${participants}`);
+
+    const editEvent = (eventId: string) => {
+        router.push(`/teacher/events/${eventId}/edit`);
     };
 
     return (
@@ -85,7 +81,7 @@ export default function ManageEventsPage() {
                                 <p><strong>Limit:</strong> {event.limit === 0 ? 'Unlimited' : `${event.participants.length} / ${event.limit}`}</p>
                             </CardContent>
                              <CardFooter className="flex flex-wrap gap-2">
-                                <Button size="sm" variant="outline" onClick={() => alert('Edit functionality to be implemented.')}>Edit</Button>
+                                <Button size="sm" variant="outline" onClick={() => editEvent(event.id)}>Edit</Button>
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
                                     <Button size="sm" variant="destructive">Delete</Button>
@@ -106,7 +102,33 @@ export default function ManageEventsPage() {
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
                                 </AlertDialog>
-                                <Button size="sm" variant="secondary" onClick={() => viewParticipants(event.id)}>View Participants</Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button size="sm" variant="secondary">View Participants</Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Participants for {event.title}</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                {event.participants.length > 0
+                                                    ? 'Here is a list of all registered students.'
+                                                    : 'There are no participants for this event yet.'}
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        {event.participants.length > 0 && (
+                                            <ScrollArea className="h-40 rounded-md border p-2">
+                                                <div className="space-y-2">
+                                                    {event.participants.map((p, i) => (
+                                                        <div key={i} className="text-sm">{p}</div>
+                                                    ))}
+                                                </div>
+                                            </ScrollArea>
+                                        )}
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Close</AlertDialogCancel>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             </CardFooter>
                         </Card>
                     ))}
