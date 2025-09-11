@@ -111,8 +111,7 @@ export function AuthForm() {
             description: `Welcome back, ${result.name}!`,
           });
           const redirectPath = result.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard'; 
-          // Use window.location.href for a full page reload to ensure localStorage is read correctly.
-          window.location.href = redirectPath;
+          router.push(redirectPath);
         } else {
           toast({
             variant: "destructive",
