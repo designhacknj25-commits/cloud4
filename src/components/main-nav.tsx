@@ -62,14 +62,13 @@ export function MainNav({
   children: React.ReactNode,
 }) {
   const pathname = usePathname();
-  const router = useRouter();
   const { role } = useAuth();
   const { user, isLoading } = useContext(UserContext);
   
   const handleLogout = () => {
     document.cookie = "userRole=; path=/; max-age=0";
     document.cookie = "userEmail=; path=/; max-age=0";
-    router.push("/login");
+    // The main layout will now handle the redirect automatically.
   };
   
   const navItems = role === "teacher" ? teacherNav : studentNav;
