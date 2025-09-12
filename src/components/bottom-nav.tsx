@@ -10,7 +10,6 @@ import {
   HelpCircle,
   Send,
   Bell,
-  Cpu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
@@ -28,7 +27,6 @@ const teacherNav = [
   { href: "/teacher/events", label: "Events", icon: Calendar },
   { href: "/teacher/inbox", label: "Inbox", icon: Bell },
   { href: "/teacher/faq", label: "FAQ", icon: HelpCircle },
-  { href: "/teacher/assistant", label: "AI Assistant", icon: Cpu },
 ];
 
 const getCookie = (name: string) => {

@@ -13,7 +13,6 @@ import {
   Settings,
   Send,
   HelpCircle,
-  Cpu,
   Loader2,
 } from "lucide-react";
 
@@ -53,7 +52,6 @@ const teacherNav = [
   { href: "/teacher/events", label: "Manage Events", icon: Calendar },
   { href: "/teacher/inbox", label: "Inbox", icon: Bell },
   { href: "/teacher/faq", label: "Manage FAQs", icon: HelpCircle },
-  { href: "/teacher/assistant", label: "AI Assistant", icon: Cpu },
 ];
 
 export function MainNav({ 
