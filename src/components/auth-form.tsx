@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -22,10 +22,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
+import { useContext } from "react";
+import { UserContext } from "@/context/user-context";
+
+const emailValidation = z
+  .string()
+  .email({ message: "Invalid email address." })
+  .refine((email) => email.endsWith("@gmail.com"), {
+    message: "Only Gmail addresses are allowed.",
+  });
 
 const formSchema = z.object({
   name: z.string().optional(),
-  email: z.string().email({ message: "Invalid email address." }),
+  email: emailValidation,
   password: z.string().min(5, { message: "Password must be at least 5 characters." }),
   role: z.enum(["student", "teacher"]),
 });
@@ -48,6 +57,8 @@ export function AuthForm() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const { refetchUser } = useContext(UserContext);
   
   const isLoginPage = pathname === "/login";
   // Get role from query params, default to 'student'
@@ -64,74 +75,73 @@ export function AuthForm() {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true);
-    try {
-      if (isLoginPage) {
-        const user = getUserByEmail(values.email);
-        
-        if (user && user.password === values.password) {
-            if (user.role === values.role) {
-                setAuthCookies(user.role, user.email);
-                toast({
-                    title: "Login Successful",
-                    description: `Welcome back, ${user.name}!`,
-                });
-                const redirectPath = user.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
-                router.push(redirectPath);
-                router.refresh();
+    startTransition(() => {
+        try {
+        if (isLoginPage) {
+            const user = getUserByEmail(values.email);
+            
+            if (user && user.password === values.password) {
+                if (user.role === values.role) {
+                    setAuthCookies(user.role, user.email);
+                    toast({
+                        title: "Login Successful",
+                        description: `Welcome back, ${user.name}!`,
+                    });
+                    const redirectPath = user.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
+                    router.push(redirectPath);
+                    // No need to call refetchUser here, as the page will reload and context will be re-initialized.
+                } else {
+                    toast({
+                        variant: "destructive",
+                        title: "Login Failed",
+                        description: `An account exists for this email as a '${user.role}'. Please select the correct role.`,
+                    });
+                }
             } else {
-                 toast({
+                toast({
                     variant: "destructive",
                     title: "Login Failed",
-                    description: `An account exists for this email as a '${user.role}'. Please select the correct role.`,
+                    description: "Invalid credentials.",
                 });
             }
-        } else {
-             toast({
-                variant: "destructive",
-                title: "Login Failed",
-                description: "Invalid credentials.",
-            });
-        }
-      } else { // Signup
-        const existingUser = getUserByEmail(values.email);
-        if (existingUser) {
-           toast({
-                variant: "destructive",
-                title: "Signup Failed",
-                description: "Email already registered.",
-            });
-            return;
-        }
+        } else { // Signup
+            const existingUser = getUserByEmail(values.email);
+            if (existingUser) {
+            toast({
+                    variant: "destructive",
+                    title: "Signup Failed",
+                    description: "Email already registered.",
+                });
+                return;
+            }
 
-        const newUser: Omit<User, 'id'> = { 
-            name: values.name!, 
-            email: values.email, 
-            password: values.password, 
-            role: values.role,
-            photo: "",
-            bio: "",
-            notifications: [] 
-        };
+            const newUser: Omit<User, 'id'> = { 
+                name: values.name!, 
+                email: values.email, 
+                password: values.password, 
+                role: values.role,
+                photo: "",
+                bio: "",
+                notifications: [] 
+            };
 
-        addUser(newUser);
-        
+            addUser(newUser);
+            
+            toast({
+                title: "Signup Successful",
+                description: "Please log in with your new account.",
+            });
+            router.push(`/login?role=${values.role}`);
+        }
+        } catch (error) {
+        console.error("Authentication error:", error);
         toast({
-            title: "Signup Successful",
-            description: "Please log in with your new account.",
+            variant: "destructive",
+            title: "An error occurred",
+            description: "Please try again later.",
         });
-        router.push(`/login?role=${values.role}`);
-      }
-    } catch (error) {
-       console.error("Authentication error:", error);
-       toast({
-        variant: "destructive",
-        title: "An error occurred",
-        description: "Please try again later.",
-      });
-    } finally {
-        setIsLoading(false);
-    }
+        }
+    });
   }
 
   return (
@@ -169,7 +179,7 @@ export function AuthForm() {
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="you@example.com" {...field} />
+                  <Input type="email" placeholder="you@gmail.com" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -236,8 +246,8 @@ export function AuthForm() {
                 </FormItem>
               )}
             />
-          <Button type="submit" className="w-full font-semibold" disabled={isLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button type="submit" className="w-full font-semibold" disabled={isPending}>
+            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isLoginPage ? "Login" : "Create Account"}
           </Button>
         </form>
