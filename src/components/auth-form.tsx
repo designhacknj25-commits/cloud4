@@ -25,24 +25,16 @@ import { useToast } from "@/hooks/use-toast";
 import { useContext } from "react";
 import { UserContext } from "@/context/user-context";
 
-const emailValidation = z
-  .string()
-  .email({ message: "Invalid email address." })
-  .refine((email) => email.endsWith("@gmail.com"), {
+const loginSchema = z.object({
+  email: z.string().email({ message: "Invalid email address." }).refine((email) => email.endsWith("@gmail.com"), {
     message: "Only Gmail addresses are allowed.",
-  });
-
-const formSchema = z.object({
-  name: z.string().optional(),
-  email: emailValidation,
+  }),
   password: z.string().min(5, { message: "Password must be at least 5 characters." }),
   role: z.enum(["student", "teacher"]),
 });
 
-// Refine schema for signup page specifically
-const signupSchema = formSchema.refine((data) => !!data.name && data.name.length > 0, {
-  message: "Name is required.",
-  path: ["name"],
+const signupSchema = loginSchema.extend({
+    name: z.string().min(2, "Name must be at least 2 characters."),
 });
 
 function setAuthCookies(role: string, email: string) {
@@ -55,17 +47,15 @@ export function AuthForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { refetchUser } = useContext(UserContext);
   
   const isLoginPage = pathname === "/login";
-  // Get role from query params, default to 'student'
   const defaultRole = searchParams.get('role') === 'teacher' ? 'teacher' : 'student';
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(isLoginPage ? formSchema : signupSchema),
+  const form = useForm<z.infer<typeof signupSchema>>({
+    resolver: zodResolver(isLoginPage ? loginSchema : signupSchema),
     defaultValues: {
       name: "",
       email: "",
@@ -74,7 +64,7 @@ export function AuthForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  function onSubmit(values: z.infer<typeof signupSchema>) {
     startTransition(() => {
         try {
         if (isLoginPage) {
@@ -107,7 +97,6 @@ export function AuthForm() {
               return;
             }
 
-            // If all checks pass, login is successful
             setAuthCookies(user.role, user.email);
             toast({
                 title: "Login Successful",
@@ -275,5 +264,3 @@ export function AuthForm() {
     </div>
   );
 }
-
-    
