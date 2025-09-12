@@ -24,10 +24,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchUser = useCallback(() => {
     if (email) {
+      setIsUserLoading(true);
       const currentUser = getUserByEmail(email);
       setUser(currentUser);
+      setIsUserLoading(false);
+    } else {
+      setUser(null);
+      setIsUserLoading(false);
     }
-    setIsUserLoading(false);
   }, [email]);
 
   useEffect(() => {

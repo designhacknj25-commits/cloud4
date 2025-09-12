@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useContext } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -30,7 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getCookie } from "@/lib/utils";
+import { UserContext } from "@/context/user-context";
 
 const faqSchema = z.object({
   id: z.string().optional(),
@@ -40,6 +40,7 @@ const faqSchema = z.object({
 });
 
 export function FaqEditor() {
+  const { user, refetchUser, isLoading: isUserLoading } = useContext(UserContext);
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [myEvents, setMyEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,13 +50,13 @@ export function FaqEditor() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const userEmail = getCookie('userEmail');
-    setFaqs(getFaqs());
-    if (userEmail) {
-      setMyEvents(getEvents().filter(e => e.teacherEmail === userEmail));
+    if (!isUserLoading && user) {
+        setIsLoading(true);
+        setFaqs(getFaqs().filter(f => myEvents.some(e => e.id === f.eventId)));
+        setMyEvents(getEvents().filter(e => e.teacherEmail === user.email));
+        setIsLoading(false);
     }
-    setIsLoading(false);
-  }, []);
+  }, [user, isUserLoading, myEvents]);
 
   const form = useForm<z.infer<typeof faqSchema>>({
     resolver: zodResolver(faqSchema),
@@ -71,7 +72,8 @@ export function FaqEditor() {
   const handleDelete = (faqId: string) => {
     startFormTransition(() => {
       deleteFaq(faqId);
-      setFaqs(prev => prev.filter(f => f.id !== faqId));
+      refetchUser();
+      setFaqs(getFaqs().filter(f => myEvents.some(e => e.id === f.eventId)));
       toast({ title: "FAQ Deleted" });
     });
   };
@@ -93,18 +95,18 @@ export function FaqEditor() {
 
         if (editingFaq) {
             updateFaq(editingFaq.id, faqData);
-            setFaqs(getFaqs());
             toast({ title: "FAQ Updated" });
         } else {
             addFaq(faqData);
-            setFaqs(getFaqs());
             toast({ title: "FAQ Added" });
         }
+        refetchUser();
+        setFaqs(getFaqs().filter(f => myEvents.some(e => e.id === f.eventId)));
         setIsDialogOpen(false);
     });
   };
 
-  if (isLoading) {
+  if (isLoading || isUserLoading) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
@@ -129,7 +131,7 @@ export function FaqEditor() {
           ))
         ) : (
           <div className="text-center py-16 bg-card/30 rounded-lg">
-            <p className="text-muted-foreground">You haven't added any FAQs yet.</p>
+            <p className="text-muted-foreground">You haven't added any FAQs for your events yet.</p>
           </div>
         )}
       </div>

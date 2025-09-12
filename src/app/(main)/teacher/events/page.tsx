@@ -4,10 +4,17 @@
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import Link from 'next/link';
-import { Suspense } from 'react';
+import { Suspense, useContext, useEffect } from 'react';
 import { TeacherEventList } from './_components/teacher-event-list';
+import { UserContext } from '@/context/user-context';
 
 export default function ManageEventsPage() {
+    const { refetchUser } = useContext(UserContext);
+
+    useEffect(() => {
+        // Refetch data when this page is mounted to ensure it's fresh
+        refetchUser();
+    }, [refetchUser]);
 
     return (
         <div className="container mx-auto">

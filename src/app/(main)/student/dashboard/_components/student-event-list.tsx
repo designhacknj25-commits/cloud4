@@ -1,53 +1,53 @@
 
 "use client";
 
-import { useState, useMemo, useTransition, useEffect } from 'react';
+import { useState, useMemo, useTransition, useEffect, useContext } from 'react';
 import { EventCard } from '@/components/event-card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getEvents, updateEvent, type Event } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { getCookie } from '@/lib/utils';
+import { UserContext } from '@/context/user-context';
 
 export function StudentEventList() {
   const { toast } = useToast();
-  const [events, setEvents] = useState<Event[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, refetchUser, isLoading: isUserLoading } = useContext(UserContext);
+  const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [category, setCategory] = useState('all');
   const [isPending, startTransition] = useTransition();
-
-  const userEmail = getCookie('userEmail');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setEvents(getEvents());
+    setAllEvents(getEvents());
     setIsLoading(false);
   }, []);
 
-  const registeredEvents = useMemo(() => {
-    if (!userEmail) return [];
-    return events.filter(e => e.participants.includes(userEmail)).map(e => e.id);
-  }, [events, userEmail]);
-  
+  const registeredEventIds = useMemo(() => {
+    if (!user || !user.email) return [];
+    const userEvents = getEvents().filter(e => e.participants.includes(user.email!));
+    return userEvents.map(e => e.id);
+  }, [user]);
+
   const filteredEvents = useMemo(() => {
-    return events.filter(event => {
+    return allEvents.filter(event => {
       const matchesSearch = (event.title.toLowerCase() + " " + event.description.toLowerCase()).includes(searchTerm.toLowerCase());
       const matchesCategory = category === 'all' || event.category === category;
       return matchesSearch && matchesCategory;
     });
-  }, [events, searchTerm, category]);
+  }, [allEvents, searchTerm, category]);
 
   const handleRegister = (eventId: string) => {
     startTransition(() => {
-      const eventToUpdate = events.find(e => e.id === eventId);
+      const eventToUpdate = allEvents.find(e => e.id === eventId);
       
-      if (eventToUpdate && userEmail && !eventToUpdate.participants.includes(userEmail)) {
-        const updatedParticipants = [...eventToUpdate.participants, userEmail];
+      if (eventToUpdate && user && user.email && !eventToUpdate.participants.includes(user.email)) {
+        const updatedParticipants = [...eventToUpdate.participants, user.email];
         updateEvent(eventId, { participants: updatedParticipants });
         
-        // Optimistically update the UI
-        setEvents(prevEvents => prevEvents.map(e => e.id === eventId ? { ...e, participants: updatedParticipants } : e));
+        refetchUser(); // This will re-fetch the user and re-evaluate registeredEventIds
+        setAllEvents(getEvents()); // Also refetch events to update counts
         
         toast({ title: "Successfully Registered!", description: "You will be notified of any updates." });
       } else {
@@ -58,14 +58,14 @@ export function StudentEventList() {
 
   const handleUnregister = (eventId: string) => {
     startTransition(() => {
-      const eventToUpdate = events.find(e => e.id === eventId);
+      const eventToUpdate = allEvents.find(e => e.id === eventId);
       
-      if (eventToUpdate && userEmail) {
-        const updatedParticipants = eventToUpdate.participants.filter(p => p !== userEmail);
+      if (eventToUpdate && user && user.email) {
+        const updatedParticipants = eventToUpdate.participants.filter(p => p !== user.email);
         updateEvent(eventId, { participants: updatedParticipants });
 
-        // Optimistically update the UI
-        setEvents(prevEvents => prevEvents.map(e => e.id === eventId ? { ...e, participants: updatedParticipants } : e));
+        refetchUser(); // This will re-fetch the user and re-evaluate registeredEventIds
+        setAllEvents(getEvents()); // Also refetch events to update counts
 
         toast({ title: "Successfully Unregistered" });
       } else {
@@ -76,7 +76,7 @@ export function StudentEventList() {
 
   const categories = ['all', 'Workshop', 'Seminar', 'Social', 'Sports'];
 
-  if (isLoading) {
+  if (isLoading || isUserLoading) {
     return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
   }
 
@@ -113,7 +113,7 @@ export function StudentEventList() {
             <EventCard
               key={event.id}
               event={event}
-              isRegistered={registeredEvents.includes(event.id)}
+              isRegistered={registeredEventIds.includes(event.id)}
               onRegister={() => handleRegister(event.id)}
               onUnregister={() => handleUnregister(event.id)}
             />

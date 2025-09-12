@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition, useContext, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getEventById, updateEvent, type Event } from '@/lib/data';
 import { Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { UserContext } from '@/context/user-context';
 
 const eventSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
@@ -29,6 +30,7 @@ const eventSchema = z.object({
 export default function EditEventPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { refetchUser } = useContext(UserContext);
   const [event, setEvent] = useState<Event | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(true);
@@ -37,39 +39,41 @@ export default function EditEventPage() {
     resolver: zodResolver(eventSchema),
   });
 
-  useEffect(() => {
-    const fetchEvent = () => {
-        const eventId = localStorage.getItem('editEventId');
-        if (eventId) {
-            const currentEvent = getEventById(eventId);
-            if (currentEvent) {
-                setEvent(currentEvent);
-                const formattedDate = format(new Date(currentEvent.date), "yyyy-MM-dd'T'HH:mm");
-                const formattedDeadline = format(new Date(currentEvent.deadline), "yyyy-MM-dd'T'HH:mm");
+  const fetchEvent = useCallback(() => {
+    const eventId = localStorage.getItem('editEventId');
+    if (eventId) {
+        const currentEvent = getEventById(eventId);
+        if (currentEvent) {
+            setEvent(currentEvent);
+            const formattedDate = format(new Date(currentEvent.date), "yyyy-MM-dd'T'HH:mm");
+            const formattedDeadline = format(new Date(currentEvent.deadline), "yyyy-MM-dd'T'HH:mm");
 
-                form.reset({
-                ...currentEvent,
-                date: formattedDate,
-                deadline: formattedDeadline,
-                });
-            } else {
-                toast({ variant: 'destructive', title: 'Error', description: 'Event not found.' });
-                router.push('/teacher/events');
-            }
+            form.reset({
+            ...currentEvent,
+            date: formattedDate,
+            deadline: formattedDeadline,
+            });
         } else {
-            toast({ variant: 'destructive', title: 'Error', description: 'No event selected to edit.' });
+            toast({ variant: 'destructive', title: 'Error', description: 'Event not found.' });
             router.push('/teacher/events');
         }
-        setIsLoading(false);
-    };
+    } else {
+        toast({ variant: 'destructive', title: 'Error', description: 'No event selected to edit.' });
+        router.push('/teacher/events');
+    }
+    setIsLoading(false);
+  },[form, router, toast]);
+
+  useEffect(() => {
     fetchEvent();
-  }, [form, router, toast]);
+  }, [fetchEvent]);
 
   const onSubmit = (values: z.infer<typeof eventSchema>) => {
     startTransition(() => {
         if (!event) return;
         try {
             updateEvent(event.id, values);
+            refetchUser(); // refetch all data
             toast({
                 title: 'Event Updated!',
                 description: `The event "${values.title}" has been successfully updated.`,

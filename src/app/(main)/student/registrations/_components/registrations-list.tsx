@@ -1,51 +1,54 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useContext } from 'react';
 import { EventCard } from '@/components/event-card';
 import { getEvents, updateEvent, type Event } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { getCookie } from '@/lib/utils';
+import { UserContext } from '@/context/user-context';
+
 
 export function RegistrationsList() {
+  const { user, refetchUser, isLoading: isUserLoading } = useContext(UserContext);
   const [myEvents, setMyEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  
-  const userEmail = getCookie('userEmail');
 
   const fetchMyEvents = useCallback(() => {
-      if (userEmail) {
+      if (user && user.email) {
         setIsLoading(true);
         const allEvents = getEvents();
-        const registered = allEvents.filter(event => event.participants.includes(userEmail));
+        const registered = allEvents.filter(event => event.participants.includes(user.email!));
         setMyEvents(registered);
         setIsLoading(false);
       }
-    }, [userEmail]);
+    }, [user]);
 
 
   useEffect(() => {
-    fetchMyEvents();
-  }, [fetchMyEvents]);
+    if(!isUserLoading) {
+      fetchMyEvents();
+    }
+  }, [fetchMyEvents, isUserLoading]);
 
   const handleUnregister = useCallback((eventId: string) => {
-    if (!userEmail) return;
+    if (!user || !user.email) return;
 
     const eventToUpdate = myEvents.find(e => e.id === eventId);
 
     if (eventToUpdate) {
-      const updatedParticipants = eventToUpdate.participants.filter(p => p !== userEmail);
+      const updatedParticipants = eventToUpdate.participants.filter(p => p !== user.email);
       updateEvent(eventId, { participants: updatedParticipants });
       setMyEvents(prev => prev.filter(e => e.id !== eventId));
+      refetchUser();
       toast({ title: "Successfully Unregistered" });
     } else {
       toast({ variant: "destructive", title: "Failed to Unregister" });
     }
-  }, [userEmail, myEvents, toast]);
+  }, [user, myEvents, toast, refetchUser]);
 
-  if (isLoading) {
+  if (isLoading || isUserLoading) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 

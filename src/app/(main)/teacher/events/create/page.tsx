@@ -13,9 +13,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { addEvent } from '@/lib/data';
-import { useTransition } from 'react';
+import { useTransition, useContext } from 'react';
 import { Loader2 } from 'lucide-react';
-import { getCookie } from '@/lib/utils';
+import { UserContext } from '@/context/user-context';
 
 const eventSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
@@ -30,7 +30,7 @@ export default function CreateEventPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
-  const userEmail = getCookie('userEmail');
+  const { user } = useContext(UserContext);
 
   const form = useForm<z.infer<typeof eventSchema>>({
     resolver: zodResolver(eventSchema),
@@ -47,10 +47,12 @@ export default function CreateEventPage() {
   const onSubmit = (values: z.infer<typeof eventSchema>) => {
     startTransition(() => {
         try {
+            if (!user || !user.email) throw new Error("User not found");
+
             const newEvent = {
                 ...values,
                 poster: `https://picsum.photos/seed/evt${Date.now()}/600/400`,
-                teacherEmail: userEmail || 'teacher@test.com',
+                teacherEmail: user.email,
                 participants: [],
             };
             
@@ -61,12 +63,12 @@ export default function CreateEventPage() {
             description: `The event "${values.title}" has been successfully created.`,
             });
             router.push('/teacher/events');
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to create event:", error);
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Failed to create the event. Please try again.',
+                description: error.message || 'Failed to create the event. Please try again.',
             });
         }
     });
@@ -159,7 +161,7 @@ export default function CreateEventPage() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isPending}>
+            <Button type="submit" className="w-full" disabled={isPending || !user}>
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Event
             </Button>
