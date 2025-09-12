@@ -5,12 +5,19 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { SplashScreen } from "@/components/splash-screen";
 
 export default function Home() {
   const { role, isLoading } = useAuth();
   const router = useRouter();
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const splashTimer = setTimeout(() => setShowSplash(false), 2000);
+    return () => clearTimeout(splashTimer);
+  }, []);
 
   useEffect(() => {
     if (!isLoading && role) {
@@ -18,6 +25,10 @@ export default function Home() {
       router.replace(redirectPath);
     }
   }, [role, isLoading, router]);
+
+  if (showSplash) {
+    return <SplashScreen />;
+  }
 
   if (isLoading || role) {
     return (
@@ -54,3 +65,4 @@ export default function Home() {
     </div>
   );
 }
+
