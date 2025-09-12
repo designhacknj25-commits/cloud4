@@ -79,31 +79,45 @@ export function AuthForm() {
         try {
         if (isLoginPage) {
             const user = getUserByEmail(values.email);
-            
-            if (user && user.password === values.password) {
-                if (user.role === values.role) {
-                    setAuthCookies(user.role, user.email);
-                    toast({
-                        title: "Login Successful",
-                        description: `Welcome back, ${user.name}!`,
-                    });
-                    const redirectPath = user.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
-                    router.push(redirectPath);
-                    // No need to call refetchUser here, as the page will reload and context will be re-initialized.
-                } else {
-                    toast({
-                        variant: "destructive",
-                        title: "Login Failed",
-                        description: `An account exists for this email as a '${user.role}'. Please select the correct role.`,
-                    });
-                }
-            } else {
-                toast({
-                    variant: "destructive",
-                    title: "Login Failed",
-                    description: "Invalid credentials.",
-                });
+
+            if (!user) {
+              toast({
+                variant: "destructive",
+                title: "Login Failed",
+                description: "No account found with this email.",
+              });
+              return;
             }
+
+            if (user.password !== values.password) {
+              toast({
+                variant: "destructive",
+                title: "Login Failed",
+                description: "Incorrect password. Please try again.",
+              });
+              return;
+            }
+
+            if (user.role !== values.role) {
+              toast({
+                variant: "destructive",
+                title: "Login Failed",
+                description: `An account exists with this email, but as a '${user.role}'. Please select the correct role.`,
+              });
+              return;
+            }
+
+            // If all checks pass, login is successful
+            setAuthCookies(user.role, user.email);
+            toast({
+                title: "Login Successful",
+                description: `Welcome back, ${user.name}!`,
+            });
+            const redirectPath = user.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
+            router.push(redirectPath);
+            setTimeout(() => refetchUser(), 500);
+
+
         } else { // Signup
             const existingUser = getUserByEmail(values.email);
             if (existingUser) {
@@ -261,3 +275,5 @@ export function AuthForm() {
     </div>
   );
 }
+
+    
