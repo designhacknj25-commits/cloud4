@@ -3,7 +3,7 @@
 
 import React, { useContext } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   BookOpen,
@@ -62,13 +62,14 @@ export function MainNav({
   children: React.ReactNode,
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { role } = useAuth();
   const { user, isLoading } = useContext(UserContext);
   
   const handleLogout = () => {
     document.cookie = "userRole=; path=/; max-age=0";
     document.cookie = "userEmail=; path=/; max-age=0";
-    window.location.href = "/login";
+    router.push("/login");
   };
   
   const navItems = role === "teacher" ? teacherNav : studentNav;
