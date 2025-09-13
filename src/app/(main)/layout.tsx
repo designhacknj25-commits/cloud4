@@ -34,23 +34,22 @@ export default function MainLayout({
 
   useEffect(() => {
     if (!isLoading) {
-      refetchUser();
+      if (email) {
+        refetchUser();
+      } else {
+        router.replace('/login');
+        setIsUserLoading(false);
+      }
     }
-  }, [email, isLoading, refetchUser]);
+  }, [email, isLoading, refetchUser, router]);
 
-
-  useEffect(() => {
-    if (!isLoading && !role) {
-      router.replace('/login');
-    }
-  }, [role, isLoading, router]);
 
   if (isLoading || isUserLoading) {
     return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
   
   if (!role || !user) {
-    // This can happen briefly during logout.
+    // This can happen briefly during logout or if auth state is lost.
     // The useEffect above will redirect.
     return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
