@@ -30,6 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useUser } from "@/context/user-context";
 
 
 const faqSchema = z.object({
@@ -40,6 +41,7 @@ const faqSchema = z.object({
 });
 
 export function FaqEditor({ faqs, myEvents, refreshData }: { faqs: FAQ[]; myEvents: Event[]; refreshData: () => void; }) {
+  const { refetchUser } = useUser();
   const [isFormPending, startFormTransition] = useTransition();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFaq, setEditingFaq] = useState<FAQ | null>(null);
@@ -47,7 +49,7 @@ export function FaqEditor({ faqs, myEvents, refreshData }: { faqs: FAQ[]; myEven
 
   const form = useForm<z.infer<typeof faqSchema>>({
     resolver: zodResolver(faqSchema),
-    defaultValues: { id: "", question: "", answer: "" },
+    defaultValues: { id: "", question: "", answer: "", eventId: undefined },
   });
 
   const handleOpenDialog = (faq: FAQ | null = null) => {
@@ -87,6 +89,7 @@ export function FaqEditor({ faqs, myEvents, refreshData }: { faqs: FAQ[]; myEven
             toast({ title: "FAQ Added" });
         }
         refreshData();
+        refetchUser();
         setIsDialogOpen(false);
     });
   };

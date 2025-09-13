@@ -10,7 +10,7 @@ import { getEvents, type Event } from '@/lib/data';
 import { useUser } from '@/context/user-context';
 
 export default function ManageEventsPage() {
-    const { user } = useUser();
+    const { user, refetchUser } = useUser();
     const [myEvents, setMyEvents] = useState<Event[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -21,10 +21,16 @@ export default function ManageEventsPage() {
             setMyEvents(allEvents.filter(e => e.teacherEmail === user.email));
         }
         setIsLoading(false);
+        refetchUser();
     };
 
     useEffect(() => {
-        refreshData();
+        setIsLoading(true);
+        if (user && user.email) {
+            const allEvents = getEvents();
+            setMyEvents(allEvents.filter(e => e.teacherEmail === user.email));
+        }
+        setIsLoading(false);
     // We only want to run this when the user prop changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);

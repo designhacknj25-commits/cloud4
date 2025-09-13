@@ -24,7 +24,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 
 
-const baseSchema = z.object({
+const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }).refine((email) => email.endsWith("@gmail.com"), {
     message: "Only Gmail addresses are allowed.",
   }),
@@ -32,8 +32,7 @@ const baseSchema = z.object({
   role: z.enum(["student", "teacher"]),
 });
 
-const loginSchema = baseSchema;
-const signupSchema = baseSchema.extend({
+const signupSchema = loginSchema.extend({
     name: z.string().min(2, "Name must be at least 2 characters."),
 });
 
@@ -52,9 +51,10 @@ export function AuthForm() {
   
   const isLoginPage = pathname === "/login";
   const defaultRole = searchParams.get('role') === 'teacher' ? 'teacher' : 'student';
+  const schema = isLoginPage ? loginSchema : signupSchema;
 
-  const form = useForm<z.infer<typeof signupSchema>>({
-    resolver: zodResolver(isLoginPage ? loginSchema : signupSchema),
+  const form = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
     defaultValues: {
       name: "",
       email: "",
@@ -63,7 +63,7 @@ export function AuthForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof signupSchema>) {
+  function onSubmit(values: z.infer<typeof schema>) {
     startTransition(() => {
         try {
         if (isLoginPage) {
@@ -103,10 +103,10 @@ export function AuthForm() {
             });
             const redirectPath = user.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
             router.push(redirectPath);
-            // No need to call refetchUser, the layout will handle it on redirect.
 
         } else { // Signup
-            const existingUser = getUserByEmail(values.email);
+            const signupValues = values as z.infer<typeof signupSchema>;
+            const existingUser = getUserByEmail(signupValues.email);
             if (existingUser) {
             toast({
                     variant: "destructive",
@@ -117,10 +117,10 @@ export function AuthForm() {
             }
 
             const newUser: Omit<User, 'id'> = { 
-                name: values.name!, 
-                email: values.email, 
-                password: values.password, 
-                role: values.role,
+                name: signupValues.name, 
+                email: signupValues.email, 
+                password: signupValues.password, 
+                role: signupValues.role,
                 photo: "",
                 bio: "",
                 notifications: [] 
@@ -132,7 +132,7 @@ export function AuthForm() {
                 title: "Signup Successful",
                 description: "Please log in with your new account.",
             });
-            router.push(`/login?role=${values.role}`);
+            router.push(`/login?role=${signupValues.role}`);
         }
         } catch (error) {
         console.error("Authentication error:", error);
