@@ -12,9 +12,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { addEvent, User } from '@/lib/data';
+import { addEvent } from '@/lib/data';
 import { useTransition } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useUser } from '@/context/user-context';
 
 const eventSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
@@ -25,7 +26,8 @@ const eventSchema = z.object({
   limit: z.coerce.number().int().min(0, 'Limit cannot be negative.'),
 });
 
-export default function CreateEventPage({ user, refetchUser }: { user: User; refetchUser: () => void }) {
+export default function CreateEventPage() {
+  const { user, refetchUser } = useUser();
   const router = useRouter();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();

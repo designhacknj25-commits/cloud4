@@ -4,10 +4,12 @@
 import { formatDistanceToNow } from "date-fns";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { updateNotifications, type User } from "@/lib/data";
+import { updateNotifications } from "@/lib/data";
 import { Loader2 } from "lucide-react";
+import { useUser } from "@/context/user-context";
 
-export default function NotificationsPage({ user, refetchUser }: { user: User; refetchUser: () => void }) {
+export default function NotificationsPage() {
+    const { user, refetchUser } = useUser();
     
     const markAsRead = (notificationId: string) => {
         if (!user || !user.id || !user.notifications) return;

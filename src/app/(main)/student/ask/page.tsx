@@ -11,14 +11,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getEvents, addNotification, type Event, type User } from "@/lib/data";
+import { getEvents, addNotification, type Event } from "@/lib/data";
+import { useUser } from "@/context/user-context";
 
 
 const askSchema = z.object({
   question: z.string().min(10, "Please ask a more detailed question."),
 });
 
-export default function AskTeacherPage({ user }: { user: User }) {
+export default function AskTeacherPage() {
+  const { user } = useUser();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 

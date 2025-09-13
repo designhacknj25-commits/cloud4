@@ -2,12 +2,14 @@
 "use client";
 
 import { FaqEditor } from "./_components/faq-editor";
-import { getEvents, getFaqs, type Event, type FAQ, type User } from "@/lib/data";
+import { getEvents, getFaqs, type Event, type FAQ } from "@/lib/data";
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { useUser } from "@/context/user-context";
 
 
-export default function ManageFaqsPage({ user }: { user: User }) {
+export default function ManageFaqsPage() {
+  const { user } = useUser();
   const [myEvents, setMyEvents] = useState<Event[]>([]);
   const [myFaqs, setMyFaqs] = useState<FAQ[]>([]);
   const [isLoading, setIsLoading] = useState(true);

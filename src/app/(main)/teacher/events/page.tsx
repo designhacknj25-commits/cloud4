@@ -6,9 +6,11 @@ import { PlusCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense, useState, useEffect } from 'react';
 import { TeacherEventList } from './_components/teacher-event-list';
-import { getEvents, type User, type Event } from '@/lib/data';
+import { getEvents, type Event } from '@/lib/data';
+import { useUser } from '@/context/user-context';
 
-export default function ManageEventsPage({ user }: { user: User }) {
+export default function ManageEventsPage() {
+    const { user } = useUser();
     const [myEvents, setMyEvents] = useState<Event[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 

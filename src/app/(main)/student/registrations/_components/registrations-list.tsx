@@ -3,12 +3,14 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { EventCard } from '@/components/event-card';
-import { getEvents, updateEvent, type Event, type User } from '@/lib/data';
+import { getEvents, updateEvent, type Event } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { useUser } from '@/context/user-context';
 
 
-export function RegistrationsList({ user, refetchUser }: { user: User; refetchUser: () => void }) {
+export function RegistrationsList() {
+  const { user, refetchUser } = useUser();
   const [myEvents, setMyEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -44,7 +46,7 @@ export function RegistrationsList({ user, refetchUser }: { user: User; refetchUs
     }
   }, [user, myEvents, toast, refetchUser]);
 
-  if (isLoading) {
+  if (isLoading || !user) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 

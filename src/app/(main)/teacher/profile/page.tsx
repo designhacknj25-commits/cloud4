@@ -12,8 +12,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { updateUser, User } from "@/lib/data";
+import { updateUser } from "@/lib/data";
 import { Loader2, Upload } from "lucide-react";
+import { useUser } from "@/context/user-context";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -21,7 +22,8 @@ const profileSchema = z.object({
   photo: z.string().optional(),
 });
 
-export default function ProfilePage({ user, refetchUser }: { user: User, refetchUser: () => void }) {
+export default function ProfilePage() {
+  const { user, refetchUser } = useUser();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [preview, setPreview] = useState<string>("");

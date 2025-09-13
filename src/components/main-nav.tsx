@@ -3,7 +3,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Bell,
   BookOpen,
@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/sidebar";
 import { BottomNav } from "./bottom-nav";
 import { useAuth } from "@/hooks/use-auth";
-import { User } from "@/lib/data";
+import { useUser } from "@/context/user-context";
 
 const studentNav = [
   { href: "/student/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -55,15 +55,12 @@ const teacherNav = [
 
 export function MainNav({ 
   children,
-  user,
-  refetchUser,
 }: { 
   children: React.ReactNode,
-  user: User | null;
-  refetchUser: () => void;
 }) {
   const pathname = usePathname();
   const { role } = useAuth();
+  const { user, refetchUser } = useUser();
   
   const handleLogout = () => {
     document.cookie = "userRole=; path=/; max-age=0";

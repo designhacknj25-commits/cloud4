@@ -8,7 +8,7 @@ import * as z from "zod";
 import { formatDistanceToNow } from "date-fns";
 import { Card, CardHeader, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { updateNotifications, addNotification, type Notification, User } from "@/lib/data";
+import { updateNotifications, addNotification, type Notification } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Loader2, Reply } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -30,12 +30,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
+import { useUser } from "@/context/user-context";
 
 const replySchema = z.object({
   replyMessage: z.string().min(1, "Reply message cannot be empty."),
 });
 
-export default function TeacherInboxPage({ user: teacher, refetchUser }: { user: User, refetchUser: () => void }) {
+export default function TeacherInboxPage() {
+  const { user: teacher, refetchUser } = useUser();
   const [isReplyPending, startReplyTransition] = useTransition();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeNotification, setActiveNotification] = useState<Notification | null>(null);

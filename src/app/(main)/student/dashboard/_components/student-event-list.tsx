@@ -5,11 +5,13 @@ import { useState, useMemo, useTransition, useEffect } from 'react';
 import { EventCard } from '@/components/event-card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getEvents, updateEvent, type Event, type User } from '@/lib/data';
+import { getEvents, updateEvent, type Event } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { useUser } from '@/context/user-context';
 
-export function StudentEventList({ user, refetchUser }: { user: User; refetchUser: () => void }) {
+export function StudentEventList() {
+  const { user, refetchUser } = useUser();
   const { toast } = useToast();
   const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
