@@ -22,10 +22,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { useContext } from "react";
-import { UserContext } from "@/context/user-context";
 
-const loginSchema = z.object({
+
+const baseSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }).refine((email) => email.endsWith("@gmail.com"), {
     message: "Only Gmail addresses are allowed.",
   }),
@@ -33,7 +32,8 @@ const loginSchema = z.object({
   role: z.enum(["student", "teacher"]),
 });
 
-const signupSchema = loginSchema.extend({
+const loginSchema = baseSchema;
+const signupSchema = baseSchema.extend({
     name: z.string().min(2, "Name must be at least 2 characters."),
 });
 
@@ -49,7 +49,6 @@ export function AuthForm() {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const { refetchUser } = useContext(UserContext);
   
   const isLoginPage = pathname === "/login";
   const defaultRole = searchParams.get('role') === 'teacher' ? 'teacher' : 'student';
@@ -104,8 +103,7 @@ export function AuthForm() {
             });
             const redirectPath = user.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
             router.push(redirectPath);
-            setTimeout(() => refetchUser(), 500);
-
+            // No need to call refetchUser, the layout will handle it on redirect.
 
         } else { // Signup
             const existingUser = getUserByEmail(values.email);

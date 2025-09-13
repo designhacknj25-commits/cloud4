@@ -1,16 +1,14 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useContext } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { EventCard } from '@/components/event-card';
-import { getEvents, updateEvent, type Event } from '@/lib/data';
+import { getEvents, updateEvent, type Event, type User } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { UserContext } from '@/context/user-context';
 
 
-export function RegistrationsList() {
-  const { user, refetchUser, isLoading: isUserLoading } = useContext(UserContext);
+export function RegistrationsList({ user, refetchUser }: { user: User; refetchUser: () => void }) {
   const [myEvents, setMyEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -27,10 +25,8 @@ export function RegistrationsList() {
 
 
   useEffect(() => {
-    if(!isUserLoading) {
-      fetchMyEvents();
-    }
-  }, [fetchMyEvents, isUserLoading]);
+    fetchMyEvents();
+  }, [fetchMyEvents]);
 
   const handleUnregister = useCallback((eventId: string) => {
     if (!user || !user.email) return;
@@ -48,7 +44,7 @@ export function RegistrationsList() {
     }
   }, [user, myEvents, toast, refetchUser]);
 
-  if (isLoading || isUserLoading) {
+  if (isLoading) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 

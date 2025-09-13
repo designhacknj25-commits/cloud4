@@ -2,19 +2,30 @@
 "use client";
 
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { Suspense, useContext, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { TeacherEventList } from './_components/teacher-event-list';
-import { UserContext } from '@/context/user-context';
+import { getEvents, type User, type Event } from '@/lib/data';
 
-export default function ManageEventsPage() {
-    const { refetchUser } = useContext(UserContext);
+export default function ManageEventsPage({ user }: { user: User }) {
+    const [myEvents, setMyEvents] = useState<Event[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const refreshData = () => {
+        setIsLoading(true);
+        if (user && user.email) {
+            const allEvents = getEvents();
+            setMyEvents(allEvents.filter(e => e.teacherEmail === user.email));
+        }
+        setIsLoading(false);
+    };
 
     useEffect(() => {
-        // Refetch data when this page is mounted to ensure it's fresh
-        refetchUser();
-    }, [refetchUser]);
+        refreshData();
+    // We only want to run this when the user prop changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]);
 
     return (
         <div className="container mx-auto">
@@ -30,8 +41,12 @@ export default function ManageEventsPage() {
                     </Link>
                 </Button>
             </div>
-            <Suspense fallback={<div className="text-center py-16">Loading events...</div>}>
-                <TeacherEventList />
+            <Suspense fallback={<div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+                {isLoading ? (
+                     <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                ) : (
+                    <TeacherEventList events={myEvents} refreshData={refreshData} />
+                )}
             </Suspense>
         </div>
     );

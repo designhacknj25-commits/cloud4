@@ -1,34 +1,37 @@
 
 "use client";
 
-import { useState, useMemo, useTransition, useEffect, useContext } from 'react';
+import { useState, useMemo, useTransition, useEffect } from 'react';
 import { EventCard } from '@/components/event-card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getEvents, updateEvent, type Event } from '@/lib/data';
+import { getEvents, updateEvent, type Event, type User } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { UserContext } from '@/context/user-context';
 
-export function StudentEventList() {
+export function StudentEventList({ user, refetchUser }: { user: User; refetchUser: () => void }) {
   const { toast } = useToast();
-  const { user, refetchUser, isLoading: isUserLoading } = useContext(UserContext);
   const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [category, setCategory] = useState('all');
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  const refreshData = () => {
     setAllEvents(getEvents());
+  };
+
+  useEffect(() => {
+    refreshData();
     setIsLoading(false);
   }, []);
 
   const registeredEventIds = useMemo(() => {
     if (!user || !user.email) return [];
-    const userEvents = getEvents().filter(e => e.participants.includes(user.email!));
+    // We use `allEvents` from state here to ensure it's reactive
+    const userEvents = allEvents.filter(e => e.participants.includes(user.email!));
     return userEvents.map(e => e.id);
-  }, [user]);
+  }, [user, allEvents]);
 
   const filteredEvents = useMemo(() => {
     return allEvents.filter(event => {
@@ -46,8 +49,8 @@ export function StudentEventList() {
         const updatedParticipants = [...eventToUpdate.participants, user.email];
         updateEvent(eventId, { participants: updatedParticipants });
         
-        refetchUser(); // This will re-fetch the user and re-evaluate registeredEventIds
-        setAllEvents(getEvents()); // Also refetch events to update counts
+        refetchUser(); // Re-fetches user data in layout
+        refreshData(); // Re-fetches event data locally
         
         toast({ title: "Successfully Registered!", description: "You will be notified of any updates." });
       } else {
@@ -64,8 +67,8 @@ export function StudentEventList() {
         const updatedParticipants = eventToUpdate.participants.filter(p => p !== user.email);
         updateEvent(eventId, { participants: updatedParticipants });
 
-        refetchUser(); // This will re-fetch the user and re-evaluate registeredEventIds
-        setAllEvents(getEvents()); // Also refetch events to update counts
+        refetchUser(); // Re-fetches user data in layout
+        refreshData(); // Re-fetches event data locally
 
         toast({ title: "Successfully Unregistered" });
       } else {
@@ -76,7 +79,7 @@ export function StudentEventList() {
 
   const categories = ['all', 'Workshop', 'Seminar', 'Social', 'Sports'];
 
-  if (isLoading || isUserLoading) {
+  if (isLoading) {
     return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
   }
 

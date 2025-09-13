@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useContext } from "react";
+import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -13,7 +13,6 @@ import {
   Settings,
   Send,
   HelpCircle,
-  Loader2,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -37,7 +36,7 @@ import {
 } from "@/components/ui/sidebar";
 import { BottomNav } from "./bottom-nav";
 import { useAuth } from "@/hooks/use-auth";
-import { UserContext } from "@/context/user-context";
+import { User } from "@/lib/data";
 
 const studentNav = [
   { href: "/student/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -56,17 +55,21 @@ const teacherNav = [
 
 export function MainNav({ 
   children,
+  user,
+  refetchUser,
 }: { 
   children: React.ReactNode,
+  user: User | null;
+  refetchUser: () => void;
 }) {
   const pathname = usePathname();
   const { role } = useAuth();
-  const { user, isLoading } = useContext(UserContext);
   
   const handleLogout = () => {
     document.cookie = "userRole=; path=/; max-age=0";
     document.cookie = "userEmail=; path=/; max-age=0";
-    // The main layout will now handle the redirect automatically.
+    // The main layout will now handle the redirect automatically after its auth check fails.
+    refetchUser();
   };
   
   const navItems = role === "teacher" ? teacherNav : studentNav;
@@ -114,9 +117,7 @@ export function MainNav({
           <div className="flex-1">
              {/* Can add breadcrumbs or page title here */}
           </div>
-           {isLoading ? (
-             <Loader2 className="h-5 w-5 animate-spin" />
-           ) : user ? (
+           {user ? (
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">

@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useState, useTransition, useContext } from "react";
+import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { formatDistanceToNow } from "date-fns";
 import { Card, CardHeader, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { updateNotifications, addNotification, type Notification } from "@/lib/data";
+import { updateNotifications, addNotification, type Notification, User } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Loader2, Reply } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -30,14 +30,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { UserContext } from "@/context/user-context";
 
 const replySchema = z.object({
   replyMessage: z.string().min(1, "Reply message cannot be empty."),
 });
 
-export default function TeacherInboxPage() {
-  const { user: teacher, refetchUser } = useContext(UserContext);
+export default function TeacherInboxPage({ user: teacher, refetchUser }: { user: User, refetchUser: () => void }) {
   const [isReplyPending, startReplyTransition] = useTransition();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeNotification, setActiveNotification] = useState<Notification | null>(null);
@@ -73,7 +71,7 @@ export default function TeacherInboxPage() {
 
         if (success) {
             toast({ title: "Reply Sent!", description: "The student has been notified." });
-            refetchUser();
+            refetchUser(); // This is crucial to update the teacher's notification state
             setIsDialogOpen(false);
         } else {
             toast({ variant: "destructive", title: "Error", description: "Could not find the student to reply to." });

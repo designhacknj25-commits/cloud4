@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useTransition, useContext } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -12,9 +12,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { updateUser } from "@/lib/data";
+import { updateUser, User } from "@/lib/data";
 import { Loader2, Upload } from "lucide-react";
-import { UserContext } from "@/context/user-context";
+
 
 const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -22,9 +22,8 @@ const profileSchema = z.object({
   photo: z.string().optional(),
 });
 
-export default function ProfilePage() {
+export default function ProfilePage({ user, refetchUser }: { user: User, refetchUser: () => void }) {
   const { toast } = useToast();
-  const { user, refetchUser } = useContext(UserContext);
   const [isPending, startTransition] = useTransition();
   const [preview, setPreview] = useState<string>("");
 

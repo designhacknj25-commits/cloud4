@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useTransition, useEffect, useContext } from "react";
+import { useState, useTransition } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,17 +11,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getEvents, addNotification, type Event } from "@/lib/data";
-import { UserContext } from "@/context/user-context";
+import { getEvents, addNotification, type Event, type User } from "@/lib/data";
+
 
 const askSchema = z.object({
   question: z.string().min(10, "Please ask a more detailed question."),
 });
 
-export default function AskTeacherPage() {
+export default function AskTeacherPage({ user }: { user: User }) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
-  const { user } = useContext(UserContext);
 
   const form = useForm<z.infer<typeof askSchema>>({
     resolver: zodResolver(askSchema),

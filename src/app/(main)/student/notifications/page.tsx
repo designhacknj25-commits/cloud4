@@ -1,17 +1,13 @@
 
 "use client";
 
-import { useContext } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { updateNotifications } from "@/lib/data";
+import { updateNotifications, type User } from "@/lib/data";
 import { Loader2 } from "lucide-react";
-import { UserContext } from "@/context/user-context";
 
-
-export default function NotificationsPage() {
-    const { user, refetchUser } = useContext(UserContext);
+export default function NotificationsPage({ user, refetchUser }: { user: User; refetchUser: () => void }) {
     
     const markAsRead = (notificationId: string) => {
         if (!user || !user.id || !user.notifications) return;

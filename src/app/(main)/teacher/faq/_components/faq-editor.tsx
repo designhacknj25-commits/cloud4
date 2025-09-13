@@ -1,11 +1,11 @@
 
 "use client";
 
-import { useState, useTransition, useEffect, useContext } from "react";
+import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { addFaq, updateFaq, deleteFaq, getFaqs, getEvents, type FAQ, type Event } from "@/lib/data";
+import { addFaq, updateFaq, deleteFaq, type FAQ, type Event } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus } from "lucide-react";
@@ -30,7 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserContext } from "@/context/user-context";
+
 
 const faqSchema = z.object({
   id: z.string().optional(),
@@ -39,26 +39,11 @@ const faqSchema = z.object({
   eventId: z.string({ required_error: "Please select an event." }),
 });
 
-export function FaqEditor() {
-  const { user, refetchUser, isLoading: isUserLoading } = useContext(UserContext);
-  const [faqs, setFaqs] = useState<FAQ[]>([]);
-  const [myEvents, setMyEvents] = useState<Event[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export function FaqEditor({ faqs, myEvents, refreshData }: { faqs: FAQ[]; myEvents: Event[]; refreshData: () => void; }) {
   const [isFormPending, startFormTransition] = useTransition();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFaq, setEditingFaq] = useState<FAQ | null>(null);
   const { toast } = useToast();
-
-  useEffect(() => {
-    if (!isUserLoading && user) {
-        setIsLoading(true);
-        const allEvents = getEvents().filter(e => e.teacherEmail === user.email);
-        setMyEvents(allEvents);
-        const myEventIds = allEvents.map(e => e.id);
-        setFaqs(getFaqs().filter(f => myEventIds.includes(f.eventId)));
-        setIsLoading(false);
-    }
-  }, [user, isUserLoading]);
 
   const form = useForm<z.infer<typeof faqSchema>>({
     resolver: zodResolver(faqSchema),
@@ -74,9 +59,7 @@ export function FaqEditor() {
   const handleDelete = (faqId: string) => {
     startFormTransition(() => {
       deleteFaq(faqId);
-      refetchUser();
-      const myEventIds = myEvents.map(e => e.id);
-      setFaqs(getFaqs().filter(f => myEventIds.includes(f.eventId)));
+      refreshData();
       toast({ title: "FAQ Deleted" });
     });
   };
@@ -103,16 +86,11 @@ export function FaqEditor() {
             addFaq(faqData);
             toast({ title: "FAQ Added" });
         }
-        refetchUser();
-        const myEventIds = myEvents.map(e => e.id);
-        setFaqs(getFaqs().filter(f => myEventIds.includes(f.eventId)));
+        refreshData();
         setIsDialogOpen(false);
     });
   };
 
-  if (isLoading || isUserLoading) {
-    return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
-  }
 
   return (
     <>

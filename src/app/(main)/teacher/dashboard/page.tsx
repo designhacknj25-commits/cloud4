@@ -1,18 +1,16 @@
 
 "use client";
 
-import { getEvents, type Event } from '@/lib/data';
+import { getEvents, type Event, User } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { CalendarCheck, Users, MessageSquare, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { useState, useEffect, useContext } from 'react';
-import { UserContext } from '@/context/user-context';
+import { useState, useEffect } from 'react';
 
-export default function TeacherDashboard() {
-  const { user } = useContext(UserContext);
+export default function TeacherDashboard({ user }: { user: User }) {
   const [myEvents, setMyEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 

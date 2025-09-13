@@ -1,14 +1,12 @@
 
 "use client";
 
-import { useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/navigation';
-import { getEvents, deleteEvent as deleteEventFromDb, getAllUsers, type Event, type User } from '@/lib/data';
+import { deleteEvent as deleteEventFromDb, getAllUsers, type Event, type User } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
-import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -23,35 +21,16 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { UserContext } from '@/context/user-context';
 
-export function TeacherEventList() {
+export function TeacherEventList({ events, refreshData }: { events: Event[]; refreshData: () => void }) {
     const router = useRouter();
     const { toast } = useToast();
-    const { user, refetchUser, isLoading: isUserLoading } = useContext(UserContext);
-    const [events, setEvents] = useState<Event[]>([]);
-    const [users, setUsers] = useState<User[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchData = () => {
-            if (!isUserLoading && user) {
-                setIsLoading(true);
-                const allEvents = getEvents();
-                const allUsers = getAllUsers();
-                setUsers(allUsers);
-                setEvents(allEvents.filter(e => e.teacherEmail === user.email));
-                setIsLoading(false);
-            }
-        }
-        fetchData();
-    }, [user, isUserLoading]);
+    const allUsers = getAllUsers();
 
     const deleteEvent = (eventId: string) => {
         try {
             deleteEventFromDb(eventId);
-            setEvents(prevEvents => prevEvents.filter(e => e.id !== eventId));
-            refetchUser();
+            refreshData(); // Refresh the list on the parent page
             toast({ title: "Event Deleted" });
         } catch (error) {
             toast({ variant: "destructive", title: "Error", description: "Could not delete event." });
@@ -64,12 +43,8 @@ export function TeacherEventList() {
     };
 
     const getParticipantName = (email: string) => {
-        const user = users.find(u => u.email === email);
+        const user = allUsers.find(u => u.email === email);
         return user ? user.name : email;
-    }
-
-    if (isLoading || isUserLoading) {
-        return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
 
     return (

@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useTransition, useContext, useCallback } from 'react';
+import { useEffect, useState, useTransition, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -13,10 +13,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { getEventById, updateEvent, type Event } from '@/lib/data';
+import { getEventById, updateEvent, type Event, User } from '@/lib/data';
 import { Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
-import { UserContext } from '@/context/user-context';
 
 const eventSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
@@ -27,10 +26,9 @@ const eventSchema = z.object({
   limit: z.coerce.number().int().min(0, 'Limit cannot be negative.'),
 });
 
-export default function EditEventPage() {
+export default function EditEventPage({ refetchUser }: { refetchUser: () => void }) {
   const router = useRouter();
   const { toast } = useToast();
-  const { refetchUser } = useContext(UserContext);
   const [event, setEvent] = useState<Event | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(true);

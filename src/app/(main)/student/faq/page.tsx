@@ -1,7 +1,7 @@
 
 "use client";
 
-import { getFaqs, getEvents, type FAQ, type Event } from "@/lib/data";
+import { getFaqs, getEvents, type FAQ, type Event, User } from "@/lib/data";
 import {
   Accordion,
   AccordionContent,
@@ -9,7 +9,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { HelpCircle, Loader2 } from "lucide-react";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 
 interface EventWithFaqs extends Event {
   faqs: FAQ[];
