@@ -3,7 +3,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   BookOpen,
@@ -59,14 +59,14 @@ export function MainNav({
   children: React.ReactNode,
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { role } = useAuth();
   const { user, refetchUser } = useUser();
   
   const handleLogout = () => {
     document.cookie = "userRole=; path=/; max-age=0";
     document.cookie = "userEmail=; path=/; max-age=0";
-    // The main layout will now handle the redirect automatically after its auth check fails.
-    refetchUser();
+    router.push('/login');
   };
   
   const navItems = role === "teacher" ? teacherNav : studentNav;
