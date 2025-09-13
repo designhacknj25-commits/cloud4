@@ -73,6 +73,7 @@ export default function TeacherInboxPage() {
 
         if (success) {
             toast({ title: "Reply Sent!", description: "The student has been notified." });
+            refetchUser();
             setIsDialogOpen(false);
         } else {
             toast({ variant: "destructive", title: "Error", description: "Could not find the student to reply to." });

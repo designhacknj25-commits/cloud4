@@ -52,11 +52,13 @@ export function FaqEditor() {
   useEffect(() => {
     if (!isUserLoading && user) {
         setIsLoading(true);
-        setFaqs(getFaqs().filter(f => myEvents.some(e => e.id === f.eventId)));
-        setMyEvents(getEvents().filter(e => e.teacherEmail === user.email));
+        const allEvents = getEvents().filter(e => e.teacherEmail === user.email);
+        setMyEvents(allEvents);
+        const myEventIds = allEvents.map(e => e.id);
+        setFaqs(getFaqs().filter(f => myEventIds.includes(f.eventId)));
         setIsLoading(false);
     }
-  }, [user, isUserLoading, myEvents]);
+  }, [user, isUserLoading]);
 
   const form = useForm<z.infer<typeof faqSchema>>({
     resolver: zodResolver(faqSchema),
@@ -73,7 +75,8 @@ export function FaqEditor() {
     startFormTransition(() => {
       deleteFaq(faqId);
       refetchUser();
-      setFaqs(getFaqs().filter(f => myEvents.some(e => e.id === f.eventId)));
+      const myEventIds = myEvents.map(e => e.id);
+      setFaqs(getFaqs().filter(f => myEventIds.includes(f.eventId)));
       toast({ title: "FAQ Deleted" });
     });
   };
@@ -101,7 +104,8 @@ export function FaqEditor() {
             toast({ title: "FAQ Added" });
         }
         refetchUser();
-        setFaqs(getFaqs().filter(f => myEvents.some(e => e.id === f.eventId)));
+        const myEventIds = myEvents.map(e => e.id);
+        setFaqs(getFaqs().filter(f => myEventIds.includes(f.eventId)));
         setIsDialogOpen(false);
     });
   };

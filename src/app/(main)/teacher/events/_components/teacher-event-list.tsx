@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import { getEvents, deleteEvent as deleteEventFromDb, getAllUsers, type Event, type User } from '@/lib/data';
 import { Button } from '@/components/ui/button';
@@ -23,34 +23,35 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { getCookie } from '@/lib/utils';
+import { UserContext } from '@/context/user-context';
 
 export function TeacherEventList() {
     const router = useRouter();
     const { toast } = useToast();
+    const { user, refetchUser, isLoading: isUserLoading } = useContext(UserContext);
     const [events, setEvents] = useState<Event[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = () => {
-            setIsLoading(true);
-            const userEmail = getCookie('userEmail');
-            if (userEmail) {
+            if (!isUserLoading && user) {
+                setIsLoading(true);
                 const allEvents = getEvents();
                 const allUsers = getAllUsers();
                 setUsers(allUsers);
-                setEvents(allEvents.filter(e => e.teacherEmail === userEmail));
+                setEvents(allEvents.filter(e => e.teacherEmail === user.email));
+                setIsLoading(false);
             }
-            setIsLoading(false);
         }
         fetchData();
-    }, []);
+    }, [user, isUserLoading]);
 
     const deleteEvent = (eventId: string) => {
         try {
             deleteEventFromDb(eventId);
             setEvents(prevEvents => prevEvents.filter(e => e.id !== eventId));
+            refetchUser();
             toast({ title: "Event Deleted" });
         } catch (error) {
             toast({ variant: "destructive", title: "Error", description: "Could not delete event." });
@@ -67,7 +68,7 @@ export function TeacherEventList() {
         return user ? user.name : email;
     }
 
-    if (isLoading) {
+    if (isLoading || isUserLoading) {
         return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
 
